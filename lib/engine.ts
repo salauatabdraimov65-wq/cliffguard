@@ -4,6 +4,7 @@ import fpl2026 from "../data/fpl-2026.json";
 import pct2026 from "../data/applicable-pct-2026.json";
 import pct2027 from "../data/applicable-pct-2027.json";
 import { optimize } from "./optimizer";
+import { isoDay, stateRule } from "./stateRules";
 
 /** Coverage (tax) year. Subsidy for coverage year Y uses the prior year's HHS poverty guidelines. */
 export type CoverageYear = 2026 | 2027;
@@ -58,20 +59,19 @@ export function subsidyFor(
   return Math.max(0, benchmark - applicablePct(ratio, year) * magi);
 }
 
-export function calculate(input: Input): Result {
+export type CalculateOptions = {
+  /** "Today" for deadline logic (Date or YYYY-MM-DD). Defaults to the current date. */
+  today?: Date | string;
+};
+
+export function calculate(input: Input, options: CalculateOptions = {}): Result {
+  const today = isoDay(options.today);
   const warnings: string[] = [];
   const n = input.householdSize;
   const f = fpl(n);
   const cliff = CLIFF_MULTIPLE * f;
   const magi = input.income;
   const fplPercent = magi / f;
-
-  if (UNSUPPORTED_STATES.has(input.state.toUpperCase())) {
-    warnings.push("Alaska and Hawaii are not supported yet.");
-  }
-  if (fplPercent < 1) {
-    warnings.push("Income below 100% FPL — you may qualify for Medicaid instead.");
-  }
 
   const subsidyAt = (m: number) => subsidyFor(m, n, input.benchmarkPremium);
   const subsidy = subsidyAt(magi);
@@ -80,6 +80,16 @@ export function calculate(input: Input): Result {
 
   if (overBy > 0 && Math.round(loss) === 0) {
     warnings.push("Crossing the cliff costs you little because your benchmark plan is cheap.");
+  }
+  // The cheap-plan explanation stays first: the UI shows warnings[0] for that case.
+  if (fplPercent < 1) {
+    warnings.push("Income below 100% FPL — you may qualify for Medicaid instead.");
+  }
+  if (UNSUPPORTED_STATES.has(input.state.toUpperCase())) {
+    warnings.push("Alaska and Hawaii are not supported yet.");
+  }
+  if (stateRule(input.state).stateSubsidy) {
+    warnings.push("New Mexico funds its own extra subsidy — your real loss may be smaller.");
   }
 
   const opt = optimize({
@@ -90,6 +100,7 @@ export function calculate(input: Input): Result {
     loss,
     subsidy,
     subsidyAt,
+    today,
   });
   warnings.push(...opt.warnings);
 
