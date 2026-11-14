@@ -1,4 +1,4 @@
-import { fakeCalc } from "@/lib/fakeCalc";
+import { subsidyFor } from "@/lib/engine";
 import type { Input } from "@/lib/types";
 
 export type Point = { x: number; subsidy: number; over: boolean };
@@ -13,8 +13,8 @@ export function buildSeries(input: Input, cliff: number, step = 2000): Point[] {
   const { min, max } = chartRange(cliff);
   const pts: Point[] = [];
   for (let x = min; x <= max; x += step) {
-    const r = fakeCalc({ ...input, income: x });
-    pts.push({ x, subsidy: r.subsidy, over: x > cliff });
+    const subsidy = Math.round(subsidyFor(x, input.householdSize, input.benchmarkPremium));
+    pts.push({ x, subsidy, over: x > cliff });
   }
   return pts;
 }
