@@ -28,7 +28,7 @@ export function SiteHeader({ minimal = false, overlay = false }: { minimal?: boo
       }
     >
       <div className="wrap flex h-16 items-center justify-between gap-4">
-        <Logo inverted={overlay} />
+        <Logo />
         {!minimal && (
           <nav aria-label="Main" className="flex items-center gap-1 sm:gap-2">
             <Link href="/#how" className={`hidden min-h-11 items-center rounded-lg px-3 text-[15px] transition-colors md:inline-flex ${link}`}>
@@ -41,7 +41,7 @@ export function SiteHeader({ minimal = false, overlay = false }: { minimal?: boo
               href="/diagnosis?demo=1"
               className={
                 overlay
-                  ? "btn btn-sm ml-1 min-h-11 border border-[var(--h-line)] text-[var(--h-ink)] hover:bg-white/5 sm:min-h-9"
+                  ? "btn btn-sm ml-1 min-h-11 border border-[var(--h-line)] text-[var(--h-ink)] hover:bg-[var(--h-line)] sm:min-h-9"
                   : "btn btn-secondary btn-sm ml-1 min-h-11 sm:min-h-9"
               }
             >

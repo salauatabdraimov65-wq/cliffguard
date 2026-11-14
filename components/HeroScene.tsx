@@ -48,10 +48,29 @@ const T = {
   camEnd: 3900,
 };
 
+// face colours come from the theme (globals.css: --s-*), light or dark with the device
 const COL = {
-  safe: { top: "#5cc99d", front: "#24a074", side: "#18734f" },
-  loss: { top: "#ff9e70", front: "#e5692f", side: "#a5451c" },
+  safe: { top: "var(--s-safe-top)", front: "var(--s-safe-front)", side: "var(--s-safe-side)" },
+  loss: { top: "var(--s-loss-top)", front: "var(--s-loss-front)", side: "var(--s-loss-side)" },
 };
+
+// Chips that break off the edge when the household drops (deterministic: same on every load).
+const DEBRIS = Array.from({ length: 11 }, (_, i) => {
+  const r = (n: number) => {
+    const x = Math.sin(i * 97.13 + n * 13.7) * 43758.5453;
+    return x - Math.floor(x);
+  };
+  return {
+    y: -D / 2 + r(1) * D * 0.9, // where along the edge
+    z0: 0.55 + r(2) * 0.45, // fraction of the edge height it starts at
+    vx: 0.6 + r(3) * 1.6, // outward speed, units/s
+    size: 0.1 + r(4) * 0.16,
+    spin: (r(5) - 0.5) * 14,
+    delay: r(6) * 140,
+    tone: r(7) > 0.5 ? "var(--s-safe-side)" : "var(--s-safe-front)",
+  };
+});
+const G = 30; // gravity, units/s²
 
 const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const easeOut = (k: number) => 1 - Math.pow(1 - k, 3);
@@ -76,10 +95,12 @@ type Frame = {
   plus: number; // 0..1 chip visibility
   cam: Cam;
   flash: number; // above-cliff highlight after impact
+  t: number;
 };
 
 function timeline(t: number, reduce: boolean): Frame {
   if (reduce) t = 99999;
+  const tNow = t;
   const rise = COL_H.map((_, i) => easeOut(clamp((t - T.rise - i * T.riseEach) / T.riseDur)));
 
   let markerInc = MIN;
@@ -114,7 +135,7 @@ function timeline(t: number, reduce: boolean): Frame {
   const markerOn = easeOut(clamp((t - T.land) / 260));
   const plus = t < T.plus ? 0 : t < T.impact + 500 ? 1 : 1 - clamp((t - T.impact - 500) / 300);
   const flash = t < T.impact ? 0 : 1 - clamp((t - T.impact) / 900);
-  return { rise, markerInc, markerX, markerZ, markerOn, fallen, plus, cam, flash };
+  return { rise, markerInc, markerX, markerZ, markerOn, fallen, plus, cam, flash, t: tNow };
 }
 
 const REST: Cam = { yaw: -0.5, pitch: 0.34, dist: 29 };
@@ -200,7 +221,7 @@ export function HeroScene() {
         L.done = true;
         setDone(true);
       }
-      settled = L.done;
+      settled = L.done && t > 4900; // keep drawing until the last chip has faded
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
@@ -339,6 +360,52 @@ export function HeroScene() {
   ];
   const riseAll = frame.rise.reduce((a, b) => a + b, 0) / N;
 
+  // chips breaking off the edge as the household drops — each a small tumbling square on the cliff face
+  const debris: { pts: string; fill: string; o: number }[] = [];
+  if (scrub === null) {
+    const edgeH = COL_H[11];
+    const x0 = colX(11) + W / 2;
+    for (const d of DEBRIS) {
+      const s = (frame.t - (T.hop + 120 + d.delay)) / 1000;
+      if (s <= 0) continue;
+      const zStart = edgeH * d.z0;
+      const tLand = Math.sqrt((2 * Math.max(0, zStart - STUB)) / G);
+      const sf = Math.min(s, tLand);
+      const x = x0 + 0.05 + d.vx * sf;
+      const z = Math.max(STUB, zStart - 0.5 * G * sf * sf);
+      const o = s < tLand ? 1 : Math.max(0, 1 - (s - tLand) / 0.6);
+      if (o <= 0) continue;
+      const a = d.spin * sf;
+      const c = Math.cos(a) * d.size;
+      const n = Math.sin(a) * d.size;
+      const pts = [
+        proj(x - c + n, d.y, z - n - c),
+        proj(x + c + n, d.y, z + n - c),
+        proj(x + c - n, d.y, z + n + c),
+        proj(x - c - n, d.y, z - n + c),
+      ];
+      debris.push({ pts: pathOf(pts), fill: d.tone, o });
+    }
+  }
+
+  // the landing ring: dust kicked up on impact, spreading across the ground
+  let ring = "";
+  let ringO = 0;
+  if (scrub === null && frame.t > T.impact) {
+    const k = clamp((frame.t - T.impact) / 800);
+    if (k < 1) {
+      const r = 0.3 + 2.4 * easeOut(k);
+      const lx = incomeToX(CLIFF) + PITCH * 0.78;
+      ring = pathOf(
+        Array.from({ length: 28 }, (_, i) => {
+          const a = (i / 28) * Math.PI * 2;
+          return proj(lx + Math.cos(a) * r, Math.sin(a) * r * 0.9, STUB + 0.01);
+        }),
+      );
+      ringO = (1 - k) * 0.7;
+    }
+  }
+
   return (
     <div className="relative h-full w-full">
       <div
@@ -355,46 +422,57 @@ export function HeroScene() {
         <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="block overflow-visible">
           <defs>
             <radialGradient id="hs-floor" cx="50%" cy="62%" r="60%">
-              <stop offset="0%" stopColor="#24211d" />
-              <stop offset="100%" stopColor="#12110f" stopOpacity="0" />
+              <stop offset="0%" style={{ stopColor: "var(--h-floor)" }} />
+              <stop offset="100%" style={{ stopColor: "var(--h-bg)", stopOpacity: 0 }} />
             </radialGradient>
             <filter id="hs-soft" x="-20%" y="-50%" width="140%" height="200%">
               <feGaussianBlur stdDeviation={Math.max(6, unit * 0.5)} />
             </filter>
           </defs>
           <rect x="0" y="0" width={w} height={h} fill="url(#hs-floor)" />
-          <path d={ground.join("")} stroke="rgb(239 233 222 / 0.07)" strokeWidth={1} fill="none" />
-          <polygon points={pathOf(foot)} fill="#000" opacity={0.55 * riseAll} filter="url(#hs-soft)" />
+          <path d={ground.join("")} stroke="var(--h-grid)" strokeWidth={1} fill="none" />
+          <polygon points={pathOf(foot)} fill="#000" style={{ opacity: `calc(var(--h-shadow) * ${riseAll.toFixed(3)})` }} filter="url(#hs-soft)" />
+          {ring && <polygon points={ring} fill="none" stroke="var(--h-ink-3)" strokeWidth={1.25} opacity={ringO} />}
 
           {polys.map((p, i) => (
             <polygon key={i} points={p.pts} fill={p.fill} opacity={p.opacity} stroke={p.fill} strokeWidth={0.6} strokeLinejoin="round" />
           ))}
+          {debris.map((d, i) => (
+            <polygon key={`d${i}`} points={d.pts} fill={d.fill} opacity={d.o} />
+          ))}
 
           {/* the cliff edge */}
-          <line x1={edgeGround[0]} y1={edgeGround[1]} x2={edgeTop[0]} y2={edgeTop[1]} stroke="rgb(239 233 222 / 0.55)" strokeWidth={1} opacity={frame.rise[11]} />
+          <line x1={edgeGround[0]} y1={edgeGround[1]} x2={edgeTop[0]} y2={edgeTop[1]} stroke="var(--h-ink-3)" strokeWidth={1} opacity={frame.rise[11]} />
           <g opacity={frame.rise[11]}>
-            <text x={edgeTop[0]} y={edgeTop[1] - 10} textAnchor="middle" className="font-mono" fontSize={narrow ? 11 : 13} fill="#efe9de">
+            <text x={edgeTop[0]} y={edgeTop[1] - 10} textAnchor="middle" className="font-mono" fontSize={narrow ? 11 : 13} fill="var(--h-ink)">
               $132,000 · 400% FPL
             </text>
           </g>
 
           {/* axis ends */}
-          <text x={axisL[0]} y={axisL[1] + 18} textAnchor="middle" className="font-mono" fontSize={11} fill="rgb(239 233 222 / 0.5)" opacity={frame.rise[0]}>
+          <text x={axisL[0]} y={axisL[1] + 18} textAnchor="middle" className="font-mono" fontSize={11} fill="var(--h-ink-3)" opacity={frame.rise[0]}>
             $110k
           </text>
-          <text x={axisR[0]} y={axisR[1] + 18} textAnchor="middle" className="font-mono" fontSize={11} fill="rgb(239 233 222 / 0.5)" opacity={frame.rise[N - 1]}>
+          <text x={axisR[0]} y={axisR[1] + 18} textAnchor="middle" className="font-mono" fontSize={11} fill="var(--h-ink-3)" opacity={frame.rise[N - 1]}>
             $154k
           </text>
 
           {/* household marker: shadow, then the puck */}
           {frame.markerOn > 0 && (
             <g>
-              <ellipse cx={sh[0]} cy={sh[1]} rx={mr * 1.1} ry={mr * 0.42} fill="rgb(0 0 0 / 0.35)" />
-              <circle cx={mk[0]} cy={mk[1]} r={mr} fill={fallen ? "#e5692f" : "#f6f3ec"} stroke="#12110f" strokeWidth={2.5} />
+              <ellipse cx={sh[0]} cy={sh[1]} rx={mr * 1.1} ry={mr * 0.42} fill="rgb(0 0 0 / 0.28)" />
+              <circle
+                cx={mk[0]}
+                cy={mk[1]}
+                r={mr}
+                fill={fallen ? "var(--s-loss-front)" : "var(--s-marker)"}
+                stroke="var(--s-marker-ring)"
+                strokeWidth={2.5}
+              />
               {frame.plus > 0 && scrub === null && (
                 <g opacity={frame.plus} transform={`translate(${mk[0] + mr + 10} ${mk[1] - mr - 8})`}>
-                  <rect x={0} y={-15} width={44} height={24} rx={6} fill="#f6f3ec" />
-                  <text x={22} y={2} textAnchor="middle" fontSize={14} fontWeight={600} fill="#12110f" className="font-mono">
+                  <rect x={0} y={-15} width={44} height={24} rx={6} fill="var(--s-chip)" />
+                  <text x={22} y={2} textAnchor="middle" fontSize={14} fontWeight={600} fill="var(--s-chip-ink)" className="font-mono">
                     +$1
                   </text>
                 </g>
@@ -407,16 +485,16 @@ export function HeroScene() {
       {/* live readout — a worksheet strip */}
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 flex flex-wrap items-end justify-between gap-x-6 gap-y-2 px-1 sm:bottom-2">
         <div className="flex flex-col">
-          <span className="font-mono text-[11px] text-[#efe9de]/55 sm:text-[12px]">Household income</span>
-          <span className="font-mono text-xl text-[#f6f3ec] num sm:text-2xl">{usd(mInc)}</span>
+          <span className="font-mono text-[11px] text-[var(--h-ink-3)] sm:text-[12px]">Household income</span>
+          <span className="font-mono text-xl text-[var(--h-ink)] num sm:text-2xl">{usd(mInc)}</span>
         </div>
-        <p className={`hidden self-center font-mono text-[12px] text-[#efe9de]/45 transition-opacity duration-500 lg:block ${done ? "opacity-100" : "opacity-0"}`}>
+        <p className={`hidden self-center font-mono text-[12px] text-[var(--h-ink-3)] transition-opacity duration-500 lg:block ${done ? "opacity-100" : "opacity-0"}`}>
           Move across the ledge to try any income
         </p>
         <div className="flex flex-col items-end">
-          <span className="font-mono text-[11px] text-[#efe9de]/55 sm:text-[12px]">Premium tax credit</span>
-          <span className={`font-mono text-xl num sm:text-2xl ${fallen ? "text-[#ff9a68]" : "text-[#5fcfa3]"}`}>
-            {fallen && <span className="mr-2 text-base text-[#efe9de]/40 line-through">{usd(credit(CLIFF))}</span>}
+          <span className="font-mono text-[11px] text-[var(--h-ink-3)] sm:text-[12px]">Premium tax credit</span>
+          <span className={`font-mono text-xl num sm:text-2xl ${fallen ? "text-loss-ink" : "text-safe-ink"}`}>
+            {fallen && <span className="mr-2 text-base text-[var(--h-ink-3)] line-through">{usd(credit(CLIFF))}</span>}
             {usd(shownCredit)}
           </span>
         </div>

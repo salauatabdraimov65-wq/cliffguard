@@ -45,6 +45,8 @@
   color-scheme: light;
 }
 
+/* The theme follows the device (prefers-color-scheme).
+   data-theme="light" | "dark" on <html> can force one, e.g. for screenshots. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --page: #161513;
@@ -398,20 +400,132 @@ p {
     transform: none;
   }
 }
+/* scroll reveal: the block, or each [data-reveal-item] inside it, rises in order */
+.reveal:not(:has([data-reveal-item])),
+.reveal [data-reveal-item] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 600ms var(--ease),
+    transform 700ms var(--ease);
+}
+.reveal.is-in:not(:has([data-reveal-item])) {
+  opacity: 1;
+  transform: none;
+  transition-delay: var(--delay, 0ms);
+}
+.reveal.is-in [data-reveal-item] {
+  opacity: 1;
+  transform: none;
+}
+.reveal.is-in [data-reveal-item]:nth-child(1) { transition-delay: calc(var(--delay, 0ms) + var(--stagger) * 0); }
+.reveal.is-in [data-reveal-item]:nth-child(2) { transition-delay: calc(var(--delay, 0ms) + var(--stagger) * 1); }
+.reveal.is-in [data-reveal-item]:nth-child(3) { transition-delay: calc(var(--delay, 0ms) + var(--stagger) * 2); }
+.reveal.is-in [data-reveal-item]:nth-child(4) { transition-delay: calc(var(--delay, 0ms) + var(--stagger) * 3); }
+.reveal.is-in [data-reveal-item]:nth-child(5) { transition-delay: calc(var(--delay, 0ms) + var(--stagger) * 4); }
+.reveal.is-in [data-reveal-item]:nth-child(6) { transition-delay: calc(var(--delay, 0ms) + var(--stagger) * 5); }
+@media (prefers-reduced-motion: reduce) {
+  .reveal:not(:has([data-reveal-item])),
+  .reveal [data-reveal-item] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* menus grow from their trigger, a few pixels, fast */
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.menu-in {
+  animation: menu-in 180ms var(--ease) both;
+}
 /* banner verdict change — fast: it can flip while the slider is dragged */
 .swap-in {
   animation: swap-in 220ms var(--ease) both;
 }
 
-/* ---------- hero (always dark: a lit object needs a dark room) ---------- */
-.hero {
+/* ---------- hero: follows the theme; the scene reads its colours from here ---------- */
+:root {
+  --h-bg: #f3efe6;
+  --h-floor: #fffdf8;
+  --h-ink: #1f1b16;
+  --h-ink-2: #5a5147;
+  --h-ink-3: #736a5e;
+  --h-line: rgb(31 27 22 / 0.14);
+  --h-grid: rgb(31 27 22 / 0.09);
+  --h-shadow: 0.22;
+  --s-safe-top: #8fdcb9;
+  --s-safe-front: #2a9d73;
+  --s-safe-side: #1b7352;
+  --s-loss-top: #ffbe9a;
+  --s-loss-front: #e5692f;
+  --s-loss-side: #ae4a1e;
+  --s-marker: #1f1b16;
+  --s-marker-ring: #fdfcf9;
+  --s-chip: #1f1b16;
+  --s-chip-ink: #fdfcf9;
+}
+:root[data-theme="dark"] {
   --h-bg: #12110f;
+  --h-floor: #24211d;
   --h-ink: #f6f3ec;
   --h-ink-2: rgb(239 233 222 / 0.72);
   --h-ink-3: rgb(239 233 222 / 0.5);
   --h-line: rgb(239 233 222 / 0.12);
+  --h-grid: rgb(239 233 222 / 0.07);
+  --h-shadow: 0.55;
+  --s-safe-top: #5cc99d;
+  --s-safe-front: #24a074;
+  --s-safe-side: #18734f;
+  --s-loss-top: #ff9e70;
+  --s-loss-front: #e5692f;
+  --s-loss-side: #a5451c;
+  --s-marker: #f6f3ec;
+  --s-marker-ring: #12110f;
+  --s-chip: #f6f3ec;
+  --s-chip-ink: #12110f;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --h-bg: #12110f;
+    --h-floor: #24211d;
+    --h-ink: #f6f3ec;
+    --h-ink-2: rgb(239 233 222 / 0.72);
+    --h-ink-3: rgb(239 233 222 / 0.5);
+    --h-line: rgb(239 233 222 / 0.12);
+    --h-grid: rgb(239 233 222 / 0.07);
+    --h-shadow: 0.55;
+    --s-safe-top: #5cc99d;
+    --s-safe-front: #24a074;
+    --s-safe-side: #18734f;
+    --s-loss-top: #ff9e70;
+    --s-loss-front: #e5692f;
+    --s-loss-side: #a5451c;
+    --s-marker: #f6f3ec;
+    --s-marker-ring: #12110f;
+    --s-chip: #f6f3ec;
+    --s-chip-ink: #12110f;
+  }
+}
+.hero {
   background: var(--h-bg);
   color: var(--h-ink);
+}
+/* a dark band that stays dark in both themes (Why now, the Pro card) */
+.band-dark {
+  --b-ink: #f6f3ec;
+  --b-ink-2: rgb(239 233 222 / 0.72);
+  --b-ink-3: rgb(239 233 222 / 0.5);
+  --b-line: rgb(239 233 222 / 0.14);
+  background: #171512;
+  color: var(--b-ink);
   color-scheme: dark;
 }
 @keyframes word-in {
