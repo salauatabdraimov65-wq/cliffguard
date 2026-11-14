@@ -4,13 +4,13 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Input } from "@/lib/types";
 import { calculate } from "@/lib/engine";
+import { monitorStatus } from "@/lib/monitor";
+import { demoMonthly } from "@/lib/demoMonthly";
 import { ArrowRight, Bell } from "./Icons";
 import { inputToQuery } from "./inputParams";
 import { usd, usdK } from "./format";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-// Example months for the demo family only — labelled as such on screen.
-const DEMO_MONTHS = [11200, 9800, 12400, 10900, 11600, 12300];
 
 const REMINDERS = [
   { date: "Dec 15, 2026", text: "Last day to enroll for coverage that starts Jan 1. Report your planned income." },
@@ -19,53 +19,69 @@ const REMINDERS = [
   { date: "Before you file", text: "Make the retirement contribution, then reconcile your credit on your 2027 return." },
 ];
 
+const digits = (s: string) => s.replace(/[^\d]/g, "");
+
 export function Monitor({ input, demo }: { input: Input; demo: boolean }) {
   const [months, setMonths] = useState<string[]>(() =>
-    MONTHS.map((_, i) => (demo && DEMO_MONTHS[i] !== undefined ? String(DEMO_MONTHS[i]) : "")),
+    MONTHS.map((_, i) => (demo && demoMonthly.monthlyIncomes[i] !== undefined ? String(demoMonthly.monthlyIncomes[i]) : "")),
+  );
+  const [future, setFuture] = useState(demo ? String(demoMonthly.knownFuture.amount) : "");
+
+  const planned = useMemo(() => {
+    if (demo) return demoMonthly.plannedContribution;
+    const r = calculate(input);
+    return r.feasible ? r.contributionNeeded : 0;
+  }, [demo, input]);
+
+  // months so far = January through the last month with a figure (gaps count as $0)
+  const last = months.reduce((acc, m, i) => (m !== "" ? i : acc), -1);
+  const entries = months.slice(0, last + 1).map((m) => Number(digits(m)) || 0);
+  const knownFuture = Number(digits(future)) || 0;
+
+  const status = useMemo(
+    () =>
+      monitorStatus(entries.length ? entries : [input.income / 12], entries.length ? knownFuture : 0, planned, input),
+    // entries is derived from months; stringify keeps the memo honest
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [JSON.stringify(entries), knownFuture, planned, input],
   );
 
-  const logged = months.map((m) => Number(m.replace(/[^\d]/g, "")) || 0);
-  const count = months.filter((m) => m !== "").length;
-  const sum = logged.reduce((a, b) => a + b, 0);
-  const projected = count > 0 ? Math.round((sum / count) * 12) : input.income;
-
-  const planned = useMemo(() => calculate(input), [input]);
-  const plannedContribution = planned.feasible ? planned.contributionNeeded : 0;
-  const now = useMemo(
-    () => calculate({ ...input, income: projected, netSelfEmploymentIncome: Math.round(projected * Math.min(1, input.netSelfEmploymentIncome / Math.max(1, input.income))) }),
-    [input, projected],
-  );
-  const magi = projected - plannedContribution;
-  const room = now.cliff - magi;
-  const extra = room < 0 && now.feasible ? Math.max(0, now.contributionNeeded - plannedContribution) : 0;
-  const fill = Math.min(1, magi / now.cliff);
-  const maxBar = Math.max(...logged, 1);
+  const ytd = entries.reduce((a, b) => a + b, 0);
+  const under = status.headroom >= 0;
+  const fill = Math.min(1, Math.max(0, status.projectedMagi / status.cliff));
+  const maxBar = Math.max(...months.map((m) => Number(digits(m)) || 0), 1);
 
   return (
     <div className="wrap flex flex-col gap-8 py-8 sm:py-12">
       <div className="enter flex flex-col gap-2">
-        <p className="eyebrow">{demo ? "Demo family · example months" : "Your household"} · 2027</p>
+        <p className="eyebrow">{demo ? "Demo family · illustrative months" : "Your household"} · 2027</p>
         <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.02em] sm:text-5xl">Room under the cliff</h1>
       </div>
 
-      <section className={`enter-2 rounded-2xl border px-5 py-6 sm:px-8 sm:py-8 ${room >= 0 ? "border-safe/25 bg-safe-wash" : "border-loss/25 bg-loss-wash"}`} aria-live="polite">
+      <section className={`enter-2 rounded-2xl border px-5 py-6 transition-colors duration-300 sm:px-8 sm:py-8 ${under ? "border-safe/25 bg-safe-wash" : "border-loss/25 bg-loss-wash"}`} aria-live="polite">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex flex-col gap-1">
-            <p className={`text-[17px] font-medium ${room >= 0 ? "text-safe-ink" : "text-loss-ink"}`}>
-              {room >= 0 ? "At this pace you stay under the cliff" : "At this pace you go over the cliff"}
+            <p className={`text-[17px] font-medium ${under ? "text-safe-ink" : "text-loss-ink"}`}>
+              {under ? "At this pace you stay under the cliff" : "At this pace you go over the cliff"}
             </p>
             <p className="text-5xl font-semibold tracking-[-0.03em] num sm:text-6xl">
-              {room >= 0 ? usd(room) : `−${usd(-room)}`}
+              {under ? usd(status.headroom) : `−${usd(-status.headroom)}`}
             </p>
             <p className="text-[15px] text-ink-2 num">
-              Projected {usd(projected)}
-              {plannedContribution > 0 && ` − ${usd(plannedContribution)} planned contribution`} = {usd(magi)} MAGI
+              Projected {usd(status.projectedIncome)}
+              {planned > 0 && ` − ${usd(planned)} planned SEP IRA`} = {usd(status.projectedMagi)} MAGI
             </p>
           </div>
-          {extra > 0 && (
-            <p className="max-w-sm rounded-xl bg-card px-4 py-3 text-[15px] text-ink-2">
-              Raise your contribution by <span className="font-semibold text-ink num">{usd(extra)}</span> to stay under — or update
-              your Marketplace income.
+          {status.topUp > 0 && (
+            <p className="swap-in max-w-sm rounded-xl bg-card px-4 py-3 text-[15px] text-ink-2">
+              {status.feasible ? (
+                <>
+                  Add <span className="font-semibold text-ink num">{usd(status.topUp)}</span> to your SEP IRA to stay under — {usd(status.sepRoomLeft)} of SEP room
+                  would be left.
+                </>
+              ) : (
+                <>Your SEP IRA room isn&apos;t enough to cover the {usd(status.topUp)} top-up. Update your Marketplace income to avoid a repayment.</>
+              )}
             </p>
           )}
         </div>
@@ -73,13 +89,13 @@ export function Monitor({ input, demo }: { input: Input; demo: boolean }) {
         <div className="mt-6" aria-hidden="true">
           <div className="relative h-2 rounded-full bg-card">
             <div
-              className={`absolute inset-y-0 left-0 rounded-full transition-[width] duration-300 ${room >= 0 ? "bg-safe" : "bg-loss"}`}
+              className={`absolute inset-y-0 left-0 rounded-full transition-[width,background-color] duration-500 ${under ? "bg-safe" : "bg-loss"}`}
               style={{ width: `${fill * 100}%` }}
             />
           </div>
           <div className="mt-2 flex justify-between font-mono text-[12px] text-ink-3 num">
             <span>$0</span>
-            <span className="text-ink">{usdK(now.cliff)} cliff</span>
+            <span className="text-ink">{usdK(status.cliff)} cliff</span>
           </div>
         </div>
       </section>
@@ -88,18 +104,22 @@ export function Monitor({ input, demo }: { input: Input; demo: boolean }) {
         <section aria-labelledby="months-h" className="card enter-3 p-5 sm:p-6">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 id="months-h" className="text-[17px] font-semibold">Income by month</h2>
-            <p className="text-sm text-ink-3 num">{count} of 12 logged · {usd(sum)} so far</p>
+            <p className="text-sm text-ink-3 num">
+              {entries.length} of 12 months · {usd(ytd)} so far
+            </p>
           </div>
-          {/* mini columns: what came in, month by month */}
           <div className="mt-6 flex h-28 items-end gap-1.5" aria-hidden="true">
-            {logged.map((v, i) => (
-              <div key={i} className="flex h-full flex-1 items-end justify-center">
-                <span
-                  className="w-full max-w-6 rounded-t bg-safe-soft transition-[height] duration-300"
-                  style={{ height: v ? `${Math.max(4, (v / maxBar) * 100)}%` : "2px", opacity: v ? 1 : 0.4 }}
-                />
-              </div>
-            ))}
+            {months.map((m, i) => {
+              const v = Number(digits(m)) || 0;
+              return (
+                <div key={i} className="flex h-full flex-1 items-end justify-center">
+                  <span
+                    className="w-full max-w-6 rounded-t bg-safe-soft transition-[height] duration-500"
+                    style={{ height: v ? `${Math.max(4, (v / maxBar) * 100)}%` : "2px", opacity: v ? 1 : 0.4 }}
+                  />
+                </div>
+              );
+            })}
           </div>
           <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
             {MONTHS.map((m, i) => (
@@ -111,13 +131,30 @@ export function Monitor({ input, demo }: { input: Input; demo: boolean }) {
                   className="field min-h-11 px-2.5 text-[15px]"
                   value={months[i] ? Number(months[i]).toLocaleString("en-US") : ""}
                   onChange={(e) => {
-                    const d = e.target.value.replace(/[^\d]/g, "").slice(0, 7);
+                    const d = digits(e.target.value).slice(0, 7);
                     setMonths((arr) => arr.map((x, j) => (j === i ? d : x)));
                   }}
                   placeholder="—"
                 />
               </div>
             ))}
+          </div>
+          <div className="mt-6 flex flex-col gap-2 border-t border-line pt-5">
+            <label htmlFor="future" className="text-[15px] font-medium">
+              {demo ? demoMonthly.knownFuture.label : "Signed work still to come this year"}
+            </label>
+            <div className="relative max-w-60">
+              <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3">$</span>
+              <input
+                id="future"
+                inputMode="numeric"
+                className="field pl-8 text-[17px]"
+                value={future ? Number(future).toLocaleString("en-US") : ""}
+                onChange={(e) => setFuture(digits(e.target.value).slice(0, 7))}
+                placeholder="0"
+              />
+            </div>
+            <p className="text-sm text-ink-3">On top of your usual monthly pace.</p>
           </div>
         </section>
 
@@ -140,7 +177,7 @@ export function Monitor({ input, demo }: { input: Input; demo: boolean }) {
       </div>
 
       <p className="max-w-[70ch] text-[13px] leading-relaxed text-ink-3">
-        Projection = average logged month × 12. Educational estimate, not tax advice.
+        Projection = income so far + average month × months left + signed work. {demo && "Demo months are illustrative. "}Educational estimate, not tax advice.
       </p>
     </div>
   );

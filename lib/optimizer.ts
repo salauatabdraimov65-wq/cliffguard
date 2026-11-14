@@ -1,5 +1,8 @@
 import type { Input, PlanStep } from "./types";
-import limits from "../data/limits-2027.json";
+import limits2027 from "../data/limits-2027.json";
+
+export type Limits = typeof limits2027;
+const limits: Limits = limits2027;
 
 // Levers in priority order: SEP_IRA -> HSA.
 // Traditional IRA is intentionally NOT used (PROJECT.md §11.4).
@@ -28,17 +31,32 @@ export type OptimizeResult = {
 const usd = (x: number) => `$${Math.round(x).toLocaleString("en-US")}`;
 
 /** Max SEP IRA contribution (simplified: 20% of net SE income, capped by §415(c)). */
-export function sepCapacity(input: Input): number {
-  const byIncome = limits.sepPctOfNetSE * Math.max(0, input.netSelfEmploymentIncome);
-  return Math.max(0, Math.min(byIncome, limits.sep415cCap));
+export function sepCapacity(
+  input: Pick<Input, "netSelfEmploymentIncome">,
+  lim: Pick<Limits, "sepPctOfNetSE" | "sep415cCap"> = limits,
+): number {
+  const byIncome = lim.sepPctOfNetSE * Math.max(0, input.netSelfEmploymentIncome);
+  return Math.max(0, Math.min(byIncome, lim.sep415cCap));
 }
 
 /** Max HSA contribution; 0 unless an HSA-eligible (bronze/catastrophic) plan is chosen. */
-export function hsaCapacity(input: Input): number {
+export function hsaCapacity(
+  input: Pick<Input, "hsaEligible" | "householdSize"> & { ages?: number[] },
+  lim: { hsa: { self: number; family: number; catchUp55: number } } = limits,
+): number {
   if (!input.hsaEligible) return 0;
-  const base = input.householdSize > 1 ? limits.hsa.family : limits.hsa.self;
-  const catchUp = input.ages.some((a) => a >= 55) ? limits.hsa.catchUp55 : 0;
+  const base = input.householdSize > 1 ? lim.hsa.family : lim.hsa.self;
+  const catchUp = (input.ages ?? []).some((a) => a >= 55) ? lim.hsa.catchUp55 : 0;
   return base + catchUp;
+}
+
+/** Contribution that brings MAGI `overBy` dollars down under the cliff, with safety buffer and rounding. */
+export function contributionFor(
+  overBy: number,
+  lim: Pick<Limits, "safetyBuffer" | "roundTo"> = limits,
+): number {
+  if (overBy <= 0) return 0;
+  return Math.ceil((overBy + lim.safetyBuffer) / lim.roundTo) * lim.roundTo;
 }
 
 function marketplaceStep(reportedMagi: number): PlanStep {
@@ -67,7 +85,7 @@ export function optimize(a: OptimizeArgs): OptimizeResult {
   // Below the cliff, or crossing it costs ~nothing (cheap benchmark plan): no contributions needed.
   if (overBy <= 0 || Math.round(a.loss) === 0) return noAction();
 
-  const needed = Math.ceil((overBy + limits.safetyBuffer) / limits.roundTo) * limits.roundTo;
+  const needed = contributionFor(overBy);
   const sepCap = sepCapacity(input);
   const hsaCap = hsaCapacity(input);
 

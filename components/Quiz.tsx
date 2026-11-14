@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Input } from "@/lib/types";
 import { ArrowLeft, ArrowRight, ExternalLink, Minus, Plus } from "./Icons";
+import { IncomeUpload } from "./IncomeUpload";
 import { inputToQuery } from "./inputParams";
 import { STATES, UNSUPPORTED, stateName, zipToState } from "./zipToState";
 import { usd } from "./format";
@@ -246,6 +247,12 @@ export function Quiz() {
                 />
               </div>
             </div>
+            <IncomeUpload
+              onIncome={(n) => {
+                setIncome(Math.round(n).toLocaleString("en-US"));
+                setError("");
+              }}
+            />
             <div className="flex flex-col gap-3">
               <p id="steady-label" className="text-[15px] font-medium">How steady is it?</p>
               <div role="radiogroup" aria-labelledby="steady-label" className="grid gap-2 sm:grid-cols-3">

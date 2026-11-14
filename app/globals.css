@@ -170,8 +170,9 @@ p {
   text-wrap-style: pretty;
 }
 
-/* ---------- shared pieces ---------- */
-
+/* ---------- shared pieces ----------
+   In the components layer so Tailwind utilities (pl-9, w-full, …) can override them. */
+@layer components {
 .wrap {
   margin-inline: auto;
   width: 100%;
@@ -296,6 +297,8 @@ p {
   outline-offset: 1px;
   border-color: var(--accent);
 }
+
+} /* end @layer components */
 
 /* ---------- range slider ---------- */
 .range {
