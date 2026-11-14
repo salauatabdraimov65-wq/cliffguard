@@ -1,0 +1,10 @@
+{
+  "year": 2027,
+  "source": "IRS Rev. Proc. 2026-26 (https://www.irs.gov/pub/irs-drop/rp-26-26.pdf)",
+  "note": "Bands are FPL ratios (1.33 = 133% FPL). Within a band the percentage is interpolated linearly from initial to final.",
+  "TODO(verify)": "Rows for 133-150%, 150-200%, 200-250%, 250-300% FPL are missing: copy them from rp-26-26.pdf. Until then engine.ts interpolates across the gap and adds a warning.",
+  "rows": [
+    { "from": 0.0, "to": 1.33, "initial": 0.0215, "final": 0.0215 },
+    { "from": 3.0, "to": 4.0, "initial": 0.1022, "final": 0.1022 }
+  ]
+}
