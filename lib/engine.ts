@@ -15,34 +15,18 @@ export function fpl(householdSize: number): number {
   return fplTable.base + fplTable.perAdditional * (n - 1);
 }
 
-/** True if the FPL ratio falls into a band that is not yet in the table (TODO(verify)). */
-export function isUnverifiedBand(fplPercent: number): boolean {
-  if (fplPercent > CLIFF_MULTIPLE) return false;
-  return !ROWS.some((r) => fplPercent >= r.from && fplPercent <= r.to);
-}
-
 /**
- * Applicable percentage for an FPL ratio (e.g. 3.5 = 350% FPL).
+ * Applicable percentage for an FPL ratio (e.g. 3.5 = 350% FPL), IRS Rev. Proc. 2026-26 §3.01.
+ * Bands are [from, to); the last band also includes its upper bound (400%).
  * Inside a band: linear interpolation initial -> final.
- * TODO(verify): bands missing from data/applicable-pct-2027.json are bridged by
- * linear interpolation between neighbouring known points (placeholder only).
  */
 export function applicablePct(fplPercent: number): number {
   const x = Math.max(0, fplPercent);
-  for (const r of ROWS) {
-    if (x >= r.from && x <= r.to) {
-      const span = r.to - r.from;
-      const t = span > 0 ? (x - r.from) / span : 0;
-      return r.initial + (r.final - r.initial) * t;
-    }
-  }
   const last = ROWS[ROWS.length - 1];
-  if (x > last.to) return last.final;
-  // gap between two known rows
-  const prev = [...ROWS].reverse().find((r) => r.to < x)!;
-  const next = ROWS.find((r) => r.from > x)!;
-  const t = (x - prev.to) / (next.from - prev.to);
-  return prev.final + (next.initial - prev.final) * t;
+  if (x >= last.to) return last.final;
+  const r = ROWS.find((row) => x >= row.from && x < row.to) ?? last;
+  const t = (x - r.from) / (r.to - r.from);
+  return r.initial + (r.final - r.initial) * t;
 }
 
 /** Annual Premium Tax Credit (unrounded). 0 above the 400% FPL cliff or below 100% FPL. */
@@ -88,12 +72,6 @@ export function calculate(input: Input): Result {
     subsidyAt,
   });
   warnings.push(...opt.warnings);
-
-  if (isUnverifiedBand(fplPercent) || isUnverifiedBand(opt.magiAfterPlan / f)) {
-    warnings.push(
-      "Subsidy estimate at this income level uses an approximate rate table; confirm on healthcare.gov.",
-    );
-  }
 
   return {
     fpl: Math.round(f),

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculate } from "../lib/engine";
+import { calculate, applicablePct, fpl, subsidyFor } from "../lib/engine";
 import { demoFamily } from "../lib/demoFamily";
 import type { Input } from "../lib/types";
 
@@ -80,5 +80,25 @@ describe("calculate (coverage 2027, 48 states)", () => {
   it("7. Alaska is not supported", () => {
     const r = calculate(base({ state: "AK", income: 120000 }));
     expect(r.warnings).toContain("Alaska and Hawaii are not supported yet.");
+  });
+
+  it("8. applicable % interpolation at ~250.6% FPL (Rev. Proc. 2026-26)", () => {
+    const ratio = 40000 / fpl(1); // 40,000 / 15,960 ≈ 2.5063
+    const pct = applicablePct(ratio);
+    expect(pct).toBeCloseTo(0.0867, 3); // 8.66% + 1.56pp * (0.0063 / 0.5) ≈ 8.68%
+    const r = calculate(
+      base({ householdSize: 1, ages: [30], income: 40000, netSelfEmploymentIncome: 40000, benchmarkPremium: 6000 }),
+    );
+    expect(r.subsidy).toBe(Math.round(6000 - pct * 40000));
+    expect(Math.abs(r.subsidy - (6000 - 0.0867 * 40000))).toBeLessThan(5);
+    expect(r.warnings).toEqual([]);
+  });
+
+  it("9. band edges: 133% starts the 3.23% band, 400% stays at 10.22%", () => {
+    expect(applicablePct(1.3299)).toBeCloseTo(0.0215, 6);
+    expect(applicablePct(1.33)).toBeCloseTo(0.0323, 6);
+    expect(applicablePct(2.0)).toBeCloseTo(0.0678, 6);
+    expect(applicablePct(4.0)).toBeCloseTo(0.1022, 6);
+    expect(subsidyFor(4 * fpl(4) + 1, 4, 24000)).toBe(0);
   });
 });
