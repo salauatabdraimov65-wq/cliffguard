@@ -1,26 +1,228 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+  CliffGuard design tokens.
+  Layout concept: a cool "ledger paper" column where money is read like a tax
+  worksheet (mono line labels, right-aligned figures) and the one loud object
+  on each screen is the cliff — green ledge below 400% FPL, orange drop above.
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  Chart colors validated with the dataviz validator:
+    light (surface #FCFDFC): safe #0A7D63 · cliff #EF7340 → PASS, contrast WARN
+      on orange → relief = visible labels + table view on every chart.
+    dark  (surface #161E1B): safe #1A9E7E · cliff #E3622F → all PASS.
+*/
+:root {
+  /* neutrals, biased toward the spruce accent */
+  --page: #f1f4f2;
+  --surface: #fcfdfc;
+  --surface-2: #e7ece9;
+  --line: #d4dcd8;
+  --grid: #e2e8e5;
+  --axis: #b9c4bf;
+  --ink: #0d1714;
+  --ink-2: #44514c;
+  --ink-3: #5b6863;
+  --on-ink: #f4f7f5;
+
+  /* semantic: below the cliff */
+  --safe: #0a7d63;       /* chart mark */
+  --safe-soft: #a8d6c7;  /* non-focus bars */
+  --safe-ink: #075f4b;   /* text, >= 4.5:1 */
+  --safe-wash: #e2f1eb;  /* banner ground */
+  --on-safe: #ffffff;    /* text on a safe fill */
+
+  /* semantic: above the cliff */
+  --cliff: #ef7340;
+  --cliff-soft: #f7c3a8;
+  --cliff-ink: #a8380c;
+  --cliff-wash: #fbe9df;
+
+  --shadow: 0 1px 2px rgb(13 23 20 / 0.06), 0 8px 24px -12px rgb(13 23 20 / 0.18);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    --page: #0b110f;
+    --surface: #161e1b;
+    --surface-2: #1e2824;
+    --line: #2b3632;
+    --grid: #222c28;
+    --axis: #3a4641;
+    --ink: #edf2ef;
+    --ink-2: #b9c4bf;
+    --ink-3: #94a09b;
+    --on-ink: #0b110f;
+    --safe: #1a9e7e;
+    --safe-soft: #1f5a4b;
+    --safe-ink: #5fd0ad;
+    --safe-wash: #12302a;
+    --on-safe: #04140f;
+    --cliff: #e3622f;
+    --cliff-soft: #6b3420;
+    --cliff-ink: #ff9d70;
+    --cliff-wash: #3a1d12;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+    color-scheme: dark;
   }
 }
 
+:root[data-theme="dark"] {
+  --page: #0b110f;
+  --surface: #161e1b;
+  --surface-2: #1e2824;
+  --line: #2b3632;
+  --grid: #222c28;
+  --axis: #3a4641;
+  --ink: #edf2ef;
+  --ink-2: #b9c4bf;
+  --ink-3: #94a09b;
+  --on-ink: #0b110f;
+  --safe: #1a9e7e;
+  --safe-soft: #1f5a4b;
+  --safe-ink: #5fd0ad;
+  --safe-wash: #12302a;
+  --on-safe: #04140f;
+  --cliff: #e3622f;
+  --cliff-soft: #6b3420;
+  --cliff-ink: #ff9d70;
+  --cliff-wash: #3a1d12;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-grid: var(--grid);
+  --color-axis: var(--axis);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-on-ink: var(--on-ink);
+  --color-safe: var(--safe);
+  --color-safe-soft: var(--safe-soft);
+  --color-safe-ink: var(--safe-ink);
+  --color-safe-wash: var(--safe-wash);
+  --color-on-safe: var(--on-safe);
+  --color-cliff: var(--cliff);
+  --color-cliff-soft: var(--cliff-soft);
+  --color-cliff-ink: var(--cliff-ink);
+  --color-cliff-wash: var(--cliff-wash);
+  --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-bricolage), var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --shadow-card: var(--shadow);
+}
+
+html {
+  background: var(--page);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Worksheet line label: "L3", "400% FPL" etc. */
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Page gutter that also clears phone safe areas. */
+.gutter {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* Range slider: track split at the cliff, 44px hit area. */
+.cg-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 44px;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+.cg-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--safe) 0 var(--cliff-at, 50%),
+    var(--cliff) var(--cliff-at, 50%) 100%
+  );
+}
+.cg-range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--safe) 0 var(--cliff-at, 50%),
+    var(--cliff) var(--cliff-at, 50%) 100%
+  );
+}
+.cg-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  margin-top: -12px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  box-shadow: var(--shadow);
+}
+.cg-range::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  box-shadow: var(--shadow);
+}
+.cg-range:focus-visible {
+  outline: none;
+}
+.cg-range:focus-visible::-webkit-slider-thumb {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
