@@ -1,5 +1,7 @@
 # CliffGuard
 
+[![test](https://github.com/salauatabdraimov65-wq/cliffguard/actions/workflows/test.yml/badge.svg)](https://github.com/salauatabdraimov65-wq/cliffguard/actions/workflows/test.yml)
+
 **Earn $1 more. Lose $10,500. We make sure that doesn't happen.**
 
 Live demo: **https://cliffguard.vercel.app** — click **“Try demo family”**, no login needed.
