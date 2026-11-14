@@ -1,5 +1,7 @@
 # CliffGuard
 
+[![test](https://github.com/salauatabdraimov65-wq/cliffguard/actions/workflows/test.yml/badge.svg)](https://github.com/salauatabdraimov65-wq/cliffguard/actions/workflows/test.yml)
+
 **Earn $1 more. Lose $10,500. We make sure that doesn't happen.**
 
 Live demo: **https://cliffguard.vercel.app** — click **“Try demo family”**, no login needed.
@@ -55,6 +57,8 @@ Optional environment variables (copy `.env.example` to `.env.local`; never commi
 | [`lib/engine.ts`](lib/engine.ts) | `fpl()`, `applicablePct()`, `subsidyFor()`, `calculate(input): Result` |
 | [`lib/optimizer.ts`](lib/optimizer.ts) | Smallest SEP IRA → HSA contribution that brings MAGI under the cliff |
 | [`lib/types.ts`](lib/types.ts) | Shared `Input` / `Result` / `PlanStep` contract |
+| [`lib/repayment.ts`](lib/repayment.ts) | Tax-year 2026 repayment risk (APTC on estimated vs PTC on actual income) |
+| [`lib/monitor.ts`](lib/monitor.ts) | Year-end income projection and SEP IRA top-up for the monitoring screen |
 | [`lib/parseIncome.ts`](lib/parseIncome.ts) | Deterministic bank-CSV parser and annual income projection |
 | [`data/`](data) | Tables: FPL, applicable percentages, contribution limits |
 | [`tests/`](tests) | Unit tests, including the demo family |
@@ -77,6 +81,7 @@ The optimizer rounds the needed contribution up to $500 with a $500 safety buffe
 |---|---|---|
 | `POST /api/calc` | `Input` (see `lib/types.ts`) | `Result`, or `400 { error }` |
 | `POST /api/parse-income` | `{ csv: string }` | `{ transactions: {date, amount, payer}[], projectedAnnualIncome, confidence, months, excludedCount, explanation? }` |
+| `POST /api/repayment-risk` | `{ householdSize, estimatedIncome, actualIncome, benchmarkPremium2026, netSelfEmploymentIncome, hsaEligible, ages? }` | Tax-year 2026 APTC repayment check: `{ aptcReceived, ptcAllowed, repaymentOwed, contributionToAvoid, repaymentAfterFix, deadlines, … }` |
 | `POST /api/checkout` | `{ interval?: "year" \| "month" }` | `{ url }` (Stripe Checkout, test mode) |
 
 `/api/parse-income` keeps only incoming payments (> 0), drops transfers between your own accounts, refunds and interest, and projects `income / months × 12`. Confidence is `low` under 3 months, `medium` for 3–6 and `high` above 6. Nothing is stored. Sample file: [`public/demo-bank.csv`](public/demo-bank.csv) (8 months, $84,000 of client payments → $126,000/year).
@@ -86,6 +91,9 @@ The optimizer rounds the needed contribution up to $500 with a $500 safety buffe
 | Table | Source |
 |---|---|
 | Applicable percentages 2027 (2.15%–10.22%) | IRS [Rev. Proc. 2026-26](https://www.irs.gov/pub/irs-drop/rp-26-26.pdf), §3.01 |
+| Applicable percentages 2026 (2.10%–9.96%) | IRS Rev. Proc. 2025-25 |
+| FPL for 2026 coverage (repayment check) | HHS 2025 poverty guidelines |
+| APTC repayment cap repealed from tax year 2026 | OBBBA §71305 |
 | Federal Poverty Level (used for 2027 coverage) | HHS 2026 poverty guidelines |
 | HSA limits 2027 ($4,500 self / $9,000 family, +$1,000 at 55+) | IRS Rev. Proc. 2026-24 |
 | Bronze & catastrophic plans are HSA-eligible from 2026 | IRS Notice 2026-5 |
