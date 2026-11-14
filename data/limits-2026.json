@@ -1,0 +1,17 @@
+{
+  "hsa": {
+    "self": 4400,
+    "family": 8750,
+    "catchUp55": 1000,
+    "source": "IRS Rev. Proc. 2025-19",
+    "TODO(verify)": "2026 HSA self/family limits not yet in PROJECT.md section 5; confirm against Rev. Proc. 2025-19."
+  },
+  "deferral401k": 24500,
+  "sepPctOfNetSE": 0.2,
+  "sepPctNote": "Simplification: 20% of net self-employment income.",
+  "sep415cCap": 72000,
+  "sep415cCapNote": "TODO(verify) 2026 section 415(c) limit.",
+  "safetyBuffer": 500,
+  "roundTo": 500,
+  "taxRateEstimate": 0.22
+}
