@@ -1,0 +1,16 @@
+{
+  "coverageYear": 2027,
+  "note": "Open enrollment end date for 2027 coverage by state (YYYY-MM-DD). States not listed use defaultOpenEnrollmentEnd. stateSubsidy = the state funds its own extra premium subsidy on top of the federal credit.",
+  "source": "Team research (healthcare.gov and state exchanges); confirm each date on the state's exchange before relying on it.",
+  "defaultOpenEnrollmentEnd": "2027-01-15",
+  "states": {
+    "CA": { "openEnrollmentEnd": "2027-01-31" },
+    "NY": { "openEnrollmentEnd": "2027-01-31" },
+    "DC": { "openEnrollmentEnd": "2027-01-31" },
+    "RI": { "openEnrollmentEnd": "2027-01-31" },
+    "MA": { "openEnrollmentEnd": "2027-01-23" },
+    "VA": { "openEnrollmentEnd": "2027-01-29" },
+    "ID": { "openEnrollmentEnd": "2026-12-15" },
+    "NM": { "stateSubsidy": true }
+  }
+}
