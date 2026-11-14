@@ -1,16 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, IBM_Plex_Mono, Public_Sans } from "next/font/google";
+import { IBM_Plex_Mono, Public_Sans } from "next/font/google";
 import "./globals.css";
 
+// Public Sans is the US Web Design System typeface — the voice of federal forms.
 const publicSans = Public_Sans({
   variable: "--font-public-sans",
   subsets: ["latin"],
-});
-
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-bricolage",
-  subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
+  weight: ["400", "500", "600"],
 });
 
 const plexMono = IBM_Plex_Mono({
@@ -20,16 +16,19 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CliffGuard",
+  title: "CliffGuard — Earn $1 more. Lose $10,500.",
   description:
     "For self-employed families on the ACA Marketplace: see what the 400% FPL subsidy cliff costs you and the legal way to get back under it.",
 };
 
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
   viewportFit: "cover",
+  // the theme follows the device
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f1f4f2" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b110f" },
+    { media: "(prefers-color-scheme: light)", color: "#f3efe6" },
+    { media: "(prefers-color-scheme: dark)", color: "#12110f" },
   ],
 };
 
@@ -39,11 +38,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${publicSans.variable} ${bricolage.variable} ${plexMono.variable} h-full`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="en" className={`${publicSans.variable} ${plexMono.variable} h-full`}>
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }

@@ -1,232 +1,239 @@
 import Link from "next/link";
+import { calculate } from "@/lib/engine";
 import { demoFamily } from "@/lib/demoFamily";
-import { fakeCalc } from "@/lib/fakeCalc";
-import { CliffMini } from "@/components/CliffMini";
-import { ArrowRight, Check } from "@/components/Icons";
+import { CountUp } from "@/components/CountUp";
+import { FamilyStory } from "@/components/FamilyStory";
+import { HeroScene } from "@/components/HeroScene";
+import { ArrowRight, Check, Shield } from "@/components/Icons";
+import { MagiTape } from "@/components/MagiTape";
+import { Reveal } from "@/components/Reveal";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { fplPct, usd } from "@/components/format";
+import { usd } from "@/components/format";
 
-const result = fakeCalc(demoFamily);
+const demo = calculate(demoFamily);
 
 const steps = [
   {
-    title: "Answer 5 questions",
-    body: "ZIP, who's on your plan, what you expect to earn in 2027, how you earn it, and your benchmark plan price. About 60 seconds.",
+    title: "Answer five questions",
+    body: "Your ZIP, who is on your plan, what you expect to earn in 2027, how you earn it, and your benchmark plan price.",
   },
   {
     title: "See your number",
-    body: "How far you are from the 400% FPL cliff and how much premium tax credit you lose by crossing it. Free.",
+    body: "How far you are from the 400% FPL cliff and how much premium tax credit crossing it costs you. Free.",
   },
   {
     title: "Get back under it",
-    body: "A contribution plan with amounts and deadlines (SEP IRA, Solo 401(k), HSA), then a watch on your income all year.",
+    body: "A contribution plan with amounts and deadlines — SEP IRA, Solo 401(k), HSA — and a watch on your income all year.",
   },
 ];
 
-const whyNow = [
-  { figure: "+13%", text: "benchmark premiums for 2027" },
-  { figure: "400% FPL", text: "The 400% FPL cutoff is back since Jan 1, 2026" },
-  { figure: "No cap", text: "on paying back excess subsidy, starting with 2026 taxes" },
-];
+const words1 = ["Earn", "$1", "more."];
 
 export default function Home() {
   return (
     <>
-      <SiteHeader />
       <main className="flex-1">
-        {/* Hero */}
-        <section className="gutter">
-          <div className="mx-auto grid max-w-6xl items-center gap-10 py-12 sm:py-16 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:py-20">
-            <div className="flex flex-col gap-6">
-              <p className="inline-flex w-fit items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-sm text-ink-2">
-                <span className="size-2 rounded-full bg-safe" aria-hidden="true" />
+        {/* 1 · Hero — the cliff, lit */}
+        <section className="hero relative overflow-hidden">
+          <SiteHeader overlay />
+          {/* phone: headline -> scene -> copy; desktop: copy left, scene right across both rows */}
+          <div className="wrap grid grid-cols-[minmax(0,1fr)] gap-6 pb-12 pt-20 lg:min-h-[100svh] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:grid-rows-[1fr_auto_1fr] lg:gap-x-4 lg:gap-y-6 lg:pb-12 lg:pt-20">
+            <div className="relative z-10 flex flex-col gap-6 lg:col-start-1 lg:row-start-1 lg:self-end">
+              <p className="hero-after inline-flex w-fit items-center gap-2 rounded-full border border-[var(--h-line)] px-3 py-1.5 text-[13px] text-[var(--h-ink-2)]">
+                <span className="size-1.5 rounded-full bg-safe" aria-hidden="true" />
                 2027 open enrollment is live · ends Jan 15
               </p>
-              <h1 className="text-[2.75rem] leading-[0.98] font-extrabold tracking-[-0.035em] sm:text-6xl lg:text-7xl">
-                Earn $1 more.
-                <br />
-                <span className="text-cliff-ink">Lose $10,500.</span>
+              <h1 className="whitespace-nowrap text-[44px] font-semibold leading-[1.0] tracking-[-0.035em] sm:text-[64px] lg:text-[60px] xl:text-[68px]">
+                <span className="block">
+                  {words1.map((w, i) => (
+                    <span key={w} className="hero-word" style={{ animationDelay: `${250 + i * 110}ms` }}>
+                      {w}
+                      {i < words1.length - 1 ? " " : ""}
+                    </span>
+                  ))}
+                </span>
+                <span className="hero-line2 block w-fit text-loss-ink">Lose $10,500.</span>
               </h1>
-              <p className="max-w-[58ch] text-lg leading-relaxed text-ink-2">
-                If you&apos;re self-employed and buy health insurance on the ACA Marketplace,
-                crossing the subsidy cliff wipes out your entire premium tax credit. CliffGuard
-                shows what you&apos;re losing and the legal way to get it back.
+            </div>
+
+            <div className="relative -mx-2 h-[320px] sm:h-[420px] lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:-mr-8 lg:ml-0 lg:h-[min(540px,64svh)] lg:self-center">
+              <HeroScene />
+              <p className="sr-only">
+                A family of four earning {usd(demo.cliff)} keeps a premium tax credit of about {usd(demo.loss)} a year. At{" "}
+                {usd(demo.cliff + 1)} the credit is $0.
               </p>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Link
-                  href="/quiz"
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-safe px-6 font-semibold text-on-safe hover:brightness-110"
-                >
+            </div>
+
+            <div className="relative z-10 flex flex-col gap-6 lg:col-start-1 lg:row-span-2 lg:row-start-2 lg:self-start">
+              <p className="hero-after max-w-[34rem] text-[17px] leading-[1.6] text-[var(--h-ink-2)] sm:text-lg" style={{ animationDelay: "800ms" }}>
+                If you&apos;re self-employed and buy health insurance on the ACA Marketplace, crossing the subsidy cliff
+                wipes out your entire premium tax credit. CliffGuard shows what you&apos;re losing and the legal way to get
+                it back.
+              </p>
+              <div className="hero-after flex flex-col gap-3 sm:flex-row" style={{ animationDelay: "1000ms" }}>
+                <Link href="/quiz" className="btn btn-primary">
                   See what I&apos;m losing — 60 sec
                   <ArrowRight />
                 </Link>
-                <Link
-                  href="/diagnosis?demo=1"
-                  className="inline-flex min-h-12 items-center justify-center rounded-full border border-ink px-6 font-semibold text-ink hover:bg-ink hover:text-on-ink"
-                >
+                <Link href="/diagnosis?demo=1" className="btn border border-[var(--h-line)] text-[var(--h-ink)] hover:bg-[var(--h-line)]">
                   Try demo family
                 </Link>
               </div>
-              <p className="text-sm text-ink-3">No sign-up. Educational estimate, not tax advice.</p>
-            </div>
-
-            {/* Demo family worksheet */}
-            <div className="rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-6">
-              <div className="flex items-baseline justify-between gap-4">
-                <div>
-                  <p className="label text-ink-3">Demo family · Austin, TX</p>
-                  <p className="mt-1 font-display text-xl font-semibold">Mike &amp; Jess, 2 kids</p>
-                </div>
-                <span className="label rounded-md bg-cliff-wash px-2 py-1 text-cliff-ink">
-                  {fplPct(result.fplPercent)} FPL
-                </span>
-              </div>
-              <div className="mt-8">
-                <CliffMini input={demoFamily} result={result} />
-              </div>
-              <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-line pt-5 text-sm">
-                <div className="flex flex-col gap-0.5">
-                  <dt className="text-ink-3">Expected 2027 income</dt>
-                  <dd className="text-lg font-semibold">{usd(result.magi)}</dd>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <dt className="text-ink-3">Over the cliff by</dt>
-                  <dd className="text-lg font-semibold text-cliff-ink">{usd(result.overBy)}</dd>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <dt className="text-ink-3">Subsidy lost</dt>
-                  <dd className="text-lg font-semibold text-cliff-ink">{usd(result.loss)}/yr</dd>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <dt className="text-ink-3">With {usd(result.contributionNeeded)} to SEP IRA</dt>
-                  <dd className="text-lg font-semibold text-safe-ink">
-                    {usd(result.subsidyAfterPlan)}/yr back
-                  </dd>
-                </div>
-              </dl>
-            </div>
-          </div>
-        </section>
-
-        {/* How it works */}
-        <section id="how" className="gutter scroll-mt-20 border-t border-line bg-surface">
-          <div className="mx-auto max-w-6xl py-14 sm:py-20">
-            <div className="flex max-w-2xl flex-col gap-3">
-              <p className="label text-ink-3">How it works</p>
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-                The subsidy is based on MAGI, not on everything you earn.
-              </h2>
-              <p className="text-ink-2 leading-relaxed">
-                Contributions to a SEP IRA, a traditional Solo 401(k) or an HSA lower your MAGI.
-                The money stays yours. Most families on the Marketplace never hear about it until
-                they file.
+              <p className="hero-after text-[13px] text-[var(--h-ink-3)]" style={{ animationDelay: "1150ms" }}>
+                No sign-up. Educational estimate, not tax advice.
               </p>
             </div>
-            <ol className="mt-10 grid gap-8 md:grid-cols-3 md:gap-6">
-              {steps.map((s, i) => (
-                <li key={s.title} className="flex flex-col gap-3 border-t-2 border-ink pt-5">
-                  <span className="label text-ink-3">Step {i + 1}</span>
-                  <h3 className="text-xl font-semibold">{s.title}</h3>
-                  <p className="text-ink-2 leading-relaxed">{s.body}</p>
-                </li>
-              ))}
-            </ol>
           </div>
         </section>
 
-        {/* Why now */}
-        <section className="gutter">
-          <div className="mx-auto max-w-6xl py-14 sm:py-20">
-            <div className="flex max-w-2xl flex-col gap-3">
-              <p className="label text-ink-3">Why now</p>
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-                2027 is the first year a wrong income guess costs everything.
+        {/* 2 · From the picture to a real household — the plan applies itself in view */}
+        <section aria-labelledby="family-h" className="border-y border-line bg-page">
+          <Reveal className="wrap py-16 sm:py-24">
+            <FamilyStory />
+          </Reveal>
+        </section>
+
+        {/* 3 · How it works */}
+        <section id="how" aria-labelledby="how-h" className="scroll-mt-4">
+          <div className="wrap flex flex-col gap-12 py-16 sm:py-24">
+            <Reveal className="flex max-w-2xl flex-col gap-4">
+              <p className="eyebrow" data-reveal-item>
+                How it works
+              </p>
+              <h2 id="how-h" data-reveal-item className="text-3xl font-semibold leading-[1.1] tracking-[-0.02em] sm:text-[44px]">
+                The subsidy follows MAGI, not everything you earn
               </h2>
-            </div>
-            <ul className="mt-10 grid gap-px overflow-hidden rounded-2xl border border-line bg-line md:grid-cols-3">
-              {whyNow.map((w) => (
-                <li key={w.figure} className="flex flex-col gap-2 bg-surface p-6">
-                  <span className="font-display text-4xl font-bold tracking-tight text-cliff-ink">
-                    {w.figure}
-                  </span>
-                  <span className="text-ink-2">{w.text}</span>
+              <p data-reveal-item className="text-[17px] leading-relaxed text-ink-2">
+                Contributions to a SEP IRA, a traditional Solo 401(k) or an HSA lower your MAGI. The money stays yours, in
+                your own retirement or health account.
+              </p>
+            </Reveal>
+
+            <Reveal>
+              <MagiTape />
+            </Reveal>
+
+            <Reveal as="ol" className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line md:grid-cols-3" stagger={110}>
+              {steps.map((s, i) => (
+                <li key={s.title} data-reveal-item className="group flex flex-col gap-3 bg-page p-6 transition-colors duration-200 hover:bg-card sm:p-8">
+                  <span className="line-no transition-colors duration-200 group-hover:text-safe-ink">{String(i + 1).padStart(2, "0")}</span>
+                  <h3 className="text-xl font-semibold tracking-[-0.01em]">{s.title}</h3>
+                  <p className="leading-relaxed text-ink-2">{s.body}</p>
                 </li>
               ))}
-            </ul>
-            <p className="mt-4 text-sm text-ink-3">
-              Sources: KFF (Oct 30, 2026), Ballotpedia, IRS (OBBBA §71305).
-            </p>
+            </Reveal>
           </div>
         </section>
 
-        {/* Pricing */}
-        <section id="pricing" className="gutter scroll-mt-20 border-t border-line bg-surface">
-          <div className="mx-auto max-w-6xl py-14 sm:py-20">
-            <div className="flex max-w-2xl flex-col gap-3">
-              <p className="label text-ink-3">Pricing</p>
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+        {/* 4 · Why now — a dark band in both themes */}
+        <section aria-labelledby="now-h" className="band-dark">
+          <div className="wrap py-16 sm:py-24">
+            <Reveal className="flex max-w-2xl flex-col gap-4">
+              <p data-reveal-item className="font-mono text-[12px] text-[var(--b-ink-3)]">
+                Why now
+              </p>
+              <h2 id="now-h" data-reveal-item className="text-3xl font-semibold leading-[1.1] tracking-[-0.02em] sm:text-[44px]">
+                A low income guess now costs the full credit
+              </h2>
+            </Reveal>
+            <Reveal as="ul" className="mt-12 grid gap-10 md:grid-cols-3 md:gap-8" stagger={120}>
+              <li data-reveal-item className="flex flex-col gap-3 border-t border-[var(--b-line)] pt-6">
+                <span className="text-5xl font-semibold tracking-[-0.03em] lg:text-6xl">
+                  <CountUp to={13} prefix="+" suffix="%" />
+                </span>
+                <span className="max-w-[28ch] leading-relaxed text-[var(--b-ink-2)]">benchmark premiums for 2027</span>
+              </li>
+              <li data-reveal-item className="flex flex-col gap-3 border-t border-[var(--b-line)] pt-6">
+                <span className="text-5xl font-semibold tracking-[-0.03em] lg:text-6xl">
+                  <CountUp to={400} suffix="% FPL" ms={1300} />
+                </span>
+                <span className="max-w-[28ch] leading-relaxed text-[var(--b-ink-2)]">The 400% FPL cutoff is back since Jan 1, 2026</span>
+              </li>
+              <li data-reveal-item className="flex flex-col gap-3 border-t border-[var(--b-line)] pt-6">
+                <span className="text-5xl font-semibold tracking-[-0.03em] text-[#ff9a68] lg:text-6xl">No cap</span>
+                <span className="max-w-[28ch] leading-relaxed text-[var(--b-ink-2)]">on paying back excess subsidy, starting with 2026 taxes</span>
+              </li>
+            </Reveal>
+            <p className="mt-12 text-[13px] text-[var(--b-ink-3)]">Sources: KFF (Oct 30, 2026), Ballotpedia, IRS (OBBBA §71305).</p>
+          </div>
+        </section>
+
+        {/* 5 · Pricing */}
+        <section id="pricing" aria-labelledby="pricing-h" className="scroll-mt-4">
+          <div className="wrap py-16 sm:py-24">
+            <Reveal className="flex max-w-2xl flex-col gap-4">
+              <p data-reveal-item className="eyebrow">
+                Pricing
+              </p>
+              <h2 id="pricing-h" data-reveal-item className="text-3xl font-semibold leading-[1.1] tracking-[-0.02em] sm:text-[44px]">
                 Find out for free. Stay under the cliff with Pro.
               </h2>
-            </div>
-            <div className="mt-10 grid gap-6 md:grid-cols-2">
-              <div className="flex flex-col gap-5 rounded-2xl border border-line p-6">
+            </Reveal>
+            <Reveal className="mt-12 grid gap-6 md:grid-cols-2" stagger={120}>
+              <div data-reveal-item className="card flex flex-col gap-6 p-6 transition-transform duration-300 hover:-translate-y-0.5 sm:p-8">
                 <div>
-                  <h3 className="text-xl font-semibold">Diagnosis</h3>
-                  <p className="mt-1 font-display text-4xl font-bold">$0</p>
+                  <h3 className="text-[17px] font-semibold">Diagnosis</h3>
+                  <p className="mt-2 text-5xl font-semibold tracking-[-0.03em]">$0</p>
                 </div>
-                <ul className="flex flex-col gap-2.5 text-ink-2">
-                  {[
-                    "Distance to your 400% FPL cliff",
-                    "Subsidy you lose, per year",
-                    "Interactive income slider",
-                    "First step of your rescue plan",
-                  ].map((f) => (
-                    <li key={f} className="flex gap-2">
+                <ul className="flex flex-col gap-3 text-ink-2">
+                  {["Distance to your 400% FPL cliff", "Subsidy you lose, per year", "Interactive income slider", "First step of your rescue plan"].map((f) => (
+                    <li key={f} className="flex gap-3">
                       <Check className="mt-0.5 shrink-0 text-safe-ink" />
                       {f}
                     </li>
                   ))}
                 </ul>
-                <Link
-                  href="/quiz"
-                  className="mt-auto inline-flex min-h-12 items-center justify-center rounded-full border border-ink px-6 font-semibold hover:bg-ink hover:text-on-ink"
-                >
-                  Start free
+                <Link href="/quiz" className="btn btn-secondary mt-auto">
+                  Start the 60-second check
                 </Link>
               </div>
-              <div className="flex flex-col gap-5 rounded-2xl bg-ink p-6 text-on-ink">
+
+              <div data-reveal-item className="band-dark flex flex-col gap-6 rounded-2xl p-6 shadow-lg transition-transform duration-300 hover:-translate-y-0.5 sm:p-8">
                 <div>
-                  <h3 className="text-xl font-semibold">Pro</h3>
-                  <p className="mt-1 font-display text-4xl font-bold">
-                    $149<span className="text-lg font-medium opacity-70">/year</span>
+                  <h3 className="text-[17px] font-semibold">Pro</h3>
+                  <p className="mt-2 text-5xl font-semibold tracking-[-0.03em]">
+                    $99<span className="text-lg font-normal text-[var(--b-ink-3)]"> / year</span>
                   </p>
-                  <p className="text-sm opacity-70">
-                    Money-back promise: if your plan estimate is under $149, get a full refund.
-                  </p>
+                  <p className="mt-1 text-sm text-[var(--b-ink-3)]">or $12.99 a month</p>
                 </div>
-                <ul className="flex flex-col gap-2.5 opacity-90">
+                <ul className="flex flex-col gap-3 text-[var(--b-ink-2)]">
                   {[
-                    "Full plan: amounts and deadlines per account",
+                    "Full plan: amount and deadline for each account",
                     "Room-under-the-cliff tracker all year",
                     "December and pre-filing reminders",
                     "Marketplace income update checklist",
                   ].map((f) => (
-                    <li key={f} className="flex gap-2">
-                      <Check className="mt-0.5 shrink-0" />
+                    <li key={f} className="flex gap-3">
+                      <Check className="mt-0.5 shrink-0 text-[#5fcfa3]" />
                       {f}
                     </li>
                   ))}
                 </ul>
-                <Link
-                  href="/diagnosis?demo=1"
-                  className="mt-auto inline-flex min-h-12 items-center justify-center rounded-full bg-on-ink px-6 font-semibold text-ink hover:opacity-90"
-                >
-                  See it on the demo family
+                <Link href="/plan?demo=1" className="btn mt-auto bg-[#f6f3ec] text-[#12110f] hover:bg-white">
+                  See Pro on the demo family
                 </Link>
               </div>
-            </div>
+            </Reveal>
+            <p className="mt-6 inline-flex items-start gap-2 text-sm text-ink-2">
+              <Shield className="mt-0.5 shrink-0 text-ink-3" />
+              We never sell insurance, open accounts or move your money. You make every contribution yourself.
+            </p>
           </div>
+        </section>
+
+        {/* 6 · Close */}
+        <section className="border-t border-line bg-card">
+          <Reveal className="wrap flex flex-col items-start gap-6 py-16 sm:py-20 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-2">
+              <h2 className="text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">Enroll by Dec 15 for coverage that starts Jan 1</h2>
+              <p className="text-ink-2">Check where your household lands before you report your 2027 income.</p>
+            </div>
+            <Link href="/quiz" className="btn btn-primary w-full md:w-auto">
+              See what I&apos;m losing — 60 sec
+              <ArrowRight />
+            </Link>
+          </Reveal>
         </section>
       </main>
       <SiteFooter />
