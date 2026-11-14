@@ -1,26 +1,41 @@
 import type { Input, Result } from "./types";
-import fplTable from "../data/fpl-2026.json";
-import pctTable from "../data/applicable-pct-2027.json";
+import fpl2025 from "../data/fpl-2025.json";
+import fpl2026 from "../data/fpl-2026.json";
+import pct2026 from "../data/applicable-pct-2026.json";
+import pct2027 from "../data/applicable-pct-2027.json";
 import { optimize } from "./optimizer";
 
+/** Coverage (tax) year. Subsidy for coverage year Y uses the prior year's HHS poverty guidelines. */
+export type CoverageYear = 2026 | 2027;
+
 type PctRow = { from: number; to: number; initial: number; final: number };
-const ROWS: PctRow[] = [...(pctTable.rows as PctRow[])].sort((a, b) => a.from - b.from);
+type FplTable = { base: number; perAdditional: number };
+
+const sortRows = (rows: PctRow[]) => [...rows].sort((a, b) => a.from - b.from);
+
+const TABLES: Record<CoverageYear, { fpl: FplTable; pct: PctRow[] }> = {
+  2026: { fpl: fpl2025, pct: sortRows(pct2026.rows) }, // HHS 2025 + IRS Rev. Proc. 2025-25
+  2027: { fpl: fpl2026, pct: sortRows(pct2027.rows) }, // HHS 2026 + IRS Rev. Proc. 2026-26
+};
 
 export const CLIFF_MULTIPLE = 4.0;
 const UNSUPPORTED_STATES = new Set(["AK", "HI"]);
 
-/** Federal Poverty Level (HHS 2026, 48 states + DC) for a household size. */
-export function fpl(householdSize: number): number {
+/** Federal Poverty Level (48 states + DC) used for the given coverage year. */
+export function fpl(householdSize: number, year: CoverageYear = 2027): number {
   const n = Math.max(1, Math.floor(householdSize));
-  return fplTable.base + fplTable.perAdditional * (n - 1);
+  const t = TABLES[year].fpl;
+  return t.base + t.perAdditional * (n - 1);
 }
 
 /**
- * Applicable percentage for an FPL ratio (e.g. 3.5 = 350% FPL), IRS Rev. Proc. 2026-26 §3.01.
+ * Applicable percentage for an FPL ratio (e.g. 3.5 = 350% FPL):
+ * 2027 — IRS Rev. Proc. 2026-26 §3.01; 2026 — IRS Rev. Proc. 2025-25.
  * Bands are [from, to); the last band also includes its upper bound (400%).
  * Inside a band: linear interpolation initial -> final.
  */
-export function applicablePct(fplPercent: number): number {
+export function applicablePct(fplPercent: number, year: CoverageYear = 2027): number {
+  const ROWS = TABLES[year].pct;
   const x = Math.max(0, fplPercent);
   const last = ROWS[ROWS.length - 1];
   if (x >= last.to) return last.final;
@@ -30,12 +45,17 @@ export function applicablePct(fplPercent: number): number {
 }
 
 /** Annual Premium Tax Credit (unrounded). 0 above the 400% FPL cliff or below 100% FPL. */
-export function subsidyFor(magi: number, householdSize: number, benchmark: number): number {
-  const f = fpl(householdSize);
+export function subsidyFor(
+  magi: number,
+  householdSize: number,
+  benchmark: number,
+  year: CoverageYear = 2027,
+): number {
+  const f = fpl(householdSize, year);
   if (magi > CLIFF_MULTIPLE * f) return 0;
   const ratio = magi / f;
   if (ratio < 1) return 0; // Medicaid territory, not modelled
-  return Math.max(0, benchmark - applicablePct(ratio) * magi);
+  return Math.max(0, benchmark - applicablePct(ratio, year) * magi);
 }
 
 export function calculate(input: Input): Result {

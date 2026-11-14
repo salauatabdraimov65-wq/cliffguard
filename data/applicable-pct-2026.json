@@ -1,0 +1,13 @@
+{
+  "year": 2026,
+  "source": "IRS Rev. Proc. 2025-25",
+  "note": "Bands are FPL ratios (1.33 = 133% FPL), half-open [from, to) except the last band, which includes 400%. Above 400% FPL there is no credit (cliff). Within a band the percentage is interpolated linearly from initial to final.",
+  "rows": [
+    { "from": 0.0, "to": 1.33, "initial": 0.021, "final": 0.021 },
+    { "from": 1.33, "to": 1.5, "initial": 0.0314, "final": 0.0419 },
+    { "from": 1.5, "to": 2.0, "initial": 0.0419, "final": 0.066 },
+    { "from": 2.0, "to": 2.5, "initial": 0.066, "final": 0.0844 },
+    { "from": 2.5, "to": 3.0, "initial": 0.0844, "final": 0.0996 },
+    { "from": 3.0, "to": 4.0, "initial": 0.0996, "final": 0.0996 }
+  ]
+}
