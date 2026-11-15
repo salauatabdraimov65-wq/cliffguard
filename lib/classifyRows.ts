@@ -1,5 +1,5 @@
 import type { IncomingRow } from "./parseIncome";
-import { DEFAULT_OPENAI_MODEL } from "./explain";
+import { DEFAULT_OPENAI_MODEL, logAiFallback, openAiError, redact } from "./explain";
 
 // AI stage 3: the keyword rules stay the base. Only AMBIGUOUS incoming rows (wire transfers,
 // Zelle, Venmo/PayPal, "Transfer - <company>", bare deposits) are sent to the model, which
@@ -79,7 +79,10 @@ export async function classifyAmbiguous(
       }),
       signal: AbortSignal.timeout(opts.timeoutMs ?? TIMEOUT_MS),
     });
-    if (!res.ok) return unchanged;
+    if (!res.ok) {
+      logAiFallback("classify", await openAiError(res));
+      return unchanged;
+    }
     const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
     const parsed = JSON.parse(data.choices?.[0]?.message?.content ?? "") as { items?: { id: number; category: Category }[] };
     if (!Array.isArray(parsed.items)) return unchanged;
@@ -94,7 +97,7 @@ export async function classifyAmbiguous(
     }
     return applied ? { rows: next, aiClassified: applied, source: "ai" } : unchanged;
   } catch (e) {
-    console.error("Row classification failed; keeping the rules", e instanceof Error ? e.message : e);
+    logAiFallback("classify", redact(e instanceof Error ? `${e.name}: ${e.message}` : "error"));
     return unchanged;
   }
 }
