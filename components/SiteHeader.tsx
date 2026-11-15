@@ -5,7 +5,7 @@ export function Logo({ inverted = false }: { inverted?: boolean }) {
   return (
     <Link
       href="/"
-      className="inline-flex min-h-11 items-center gap-2.5 text-[17px] font-semibold tracking-[-0.01em]"
+      className="inline-flex min-h-11 items-center gap-2.5 text-[17px] font-semibold"
       aria-label="CliffGuard home"
     >
       <Mark inverted={inverted} />

@@ -43,7 +43,9 @@ export function Diagnosis({ input, demo }: { input: Input; demo: boolean }) {
   );
   const res = useMemo(() => calculate(live), [live]);
 
-  const canRescue = res.overBy > 0 && res.loss > 0 && res.feasible && res.contributionNeeded > 0;
+  // over the cliff: rescue; under it but inside the cushion for uneven or lumpy income: a cushion
+  const canRescue = res.feasible && res.contributionNeeded > 0 && (res.overBy > 0 ? res.loss > 0 : true);
+  const cushionOnly = canRescue && res.overBy <= 0;
   const rescued = applied && canRescue;
   const magi = rescued ? res.magiAfterPlan : res.magi;
   const subsidy = rescued ? res.subsidyAfterPlan : res.subsidy;
@@ -95,7 +97,7 @@ export function Diagnosis({ input, demo }: { input: Input; demo: boolean }) {
             {state === "over" && (
               <>
                 <p className="text-[17px] font-medium text-loss-ink num">You&apos;re {usd(res.overBy)} over the subsidy cliff</p>
-                <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.02em] sm:text-5xl">
+                <h1 className="text-[34px] font-medium leading-[1.08] tracking-[-0.02em] sm:text-5xl">
                   You&apos;re losing <span className="text-loss-ink">{usd(res.loss)}</span> a year
                 </h1>
               </>
@@ -103,7 +105,7 @@ export function Diagnosis({ input, demo }: { input: Input; demo: boolean }) {
             {state === "under" && (
               <>
                 <p className="text-[17px] font-medium text-safe-ink num">You are {usd(res.cliff - res.magi)} under the cliff</p>
-                <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.02em] sm:text-5xl">
+                <h1 className="text-[34px] font-medium leading-[1.08] tracking-[-0.02em] sm:text-5xl">
                   You keep <span className="text-safe-ink">{usd(res.subsidy)}</span> a year
                 </h1>
               </>
@@ -111,9 +113,12 @@ export function Diagnosis({ input, demo }: { input: Input; demo: boolean }) {
             {state === "rescued" && (
               <>
                 <p className="inline-flex items-center gap-2 text-[17px] font-medium text-safe-ink">
-                  <Check size={18} className="shrink-0" /> Plan applied: you&apos;re back under the cliff
+                  <Check size={18} className="shrink-0" />
+                  {cushionOnly
+                    ? `Plan applied: a ${usd(res.cliff - res.magiAfterPlan)} cushion under the cliff`
+                    : "Plan applied: you're back under the cliff"}
                 </p>
-                <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.02em] sm:text-5xl">
+                <h1 className="text-[34px] font-medium leading-[1.08] tracking-[-0.02em] sm:text-5xl">
                   You keep <span className="text-safe-ink num">{usd(shownSubsidy)}</span> a year
                 </h1>
               </>
@@ -131,6 +136,15 @@ export function Diagnosis({ input, demo }: { input: Input; demo: boolean }) {
                 <span className="flex flex-col gap-0.5 sm:flex-row sm:gap-1.5">
                   <span>Apply rescue plan:</span>
                   <span className="whitespace-nowrap font-mono text-[15px] opacity-90 sm:font-sans sm:text-[16px] sm:opacity-100">{planLabel(res.plan)}</span>
+                </span>
+                <ArrowRight className="shrink-0" />
+              </button>
+            )}
+            {state === "under" && cushionOnly && (
+              <button type="button" onClick={() => toggle(true)} className="btn btn-secondary w-full justify-between whitespace-normal text-left sm:w-auto sm:justify-center">
+                <span className="flex flex-col gap-0.5 sm:flex-row sm:gap-1.5">
+                  <span>Add a cushion:</span>
+                  <span className="whitespace-nowrap">{planLabel(res.plan)}</span>
                 </span>
                 <ArrowRight className="shrink-0" />
               </button>
@@ -153,7 +167,7 @@ export function Diagnosis({ input, demo }: { input: Input; demo: boolean }) {
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8">
         <section aria-labelledby="chart-h" className="card enter-3 p-4 sm:p-6">
           <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-            <h2 id="chart-h" className="text-[17px] font-semibold">Your premium tax credit, by income</h2>
+            <h2 id="chart-h" className="text-[17px] font-medium">Your premium tax credit, by income</h2>
             <p className="text-sm text-ink-3">2027 coverage · per year</p>
           </div>
 
@@ -199,7 +213,7 @@ export function Diagnosis({ input, demo }: { input: Input; demo: boolean }) {
         </section>
 
         <aside aria-labelledby="math-h" className="card enter-3 flex flex-col p-5 sm:p-6 lg:self-start">
-          <h2 id="math-h" className="text-[17px] font-semibold">The math</h2>
+          <h2 id="math-h" className="text-[17px] font-medium">The math</h2>
           <dl className="mt-4 flex flex-col">
             {[
               { n: "1", k: "Income", v: usd(income) },

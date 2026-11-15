@@ -1,4 +1,6 @@
-import type { Input } from "@/lib/types";
+import type { IncomeStability, Input } from "@/lib/types";
+
+const isStability = (v: string | undefined): v is IncomeStability => v === "steady" || v === "uneven" || v === "lumpy";
 import { demoFamily } from "@/lib/demoFamily";
 
 /**
@@ -16,6 +18,7 @@ export function inputToQuery(input: Input): string {
     se: String(Math.round(input.netSelfEmploymentIncome)),
     bp: String(Math.round(input.benchmarkPremium)),
     hsa: input.hsaEligible ? "1" : "0",
+    ...(input.incomeStability ? { stab: input.incomeStability } : {}),
   });
   if (input.zip) q.set("zip", input.zip);
   return q.toString();
@@ -52,6 +55,7 @@ export function queryToInput(query: QueryLike): Input | null {
     netSelfEmploymentIncome: se >= 0 ? se : inc,
     benchmarkPremium: bp,
     hsaEligible: one(query.hsa) === "1",
+    ...(isStability(one(query.stab)) ? { incomeStability: one(query.stab) as IncomeStability } : {}),
     coverageYear: 2027,
   };
 }
