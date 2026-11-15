@@ -34,6 +34,9 @@ export function validateInput(body: unknown): ValidationResult {
   if (typeof b.hsaEligible !== "boolean") {
     return { ok: false, error: "hsaEligible must be a boolean." };
   }
+  if (b.incomeStability !== undefined && !["steady", "uneven", "lumpy"].includes(b.incomeStability as string)) {
+    return { ok: false, error: 'incomeStability must be "steady", "uneven" or "lumpy".' };
+  }
   if (b.coverageYear !== 2027) {
     return { ok: false, error: "coverageYear must be 2027." };
   }
@@ -50,6 +53,7 @@ export function validateInput(body: unknown): ValidationResult {
       benchmarkPremium: b.benchmarkPremium as number,
       hsaEligible: b.hsaEligible,
       coverageYear: 2027,
+      ...(b.incomeStability !== undefined ? { incomeStability: b.incomeStability as Input["incomeStability"] } : {}),
     },
   };
 }

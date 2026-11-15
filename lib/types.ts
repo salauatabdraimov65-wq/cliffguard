@@ -1,3 +1,5 @@
+export type IncomeStability = "steady" | "uneven" | "lumpy";
+
 export type Input = {
   householdSize: number;
   state: string;
@@ -8,6 +10,7 @@ export type Input = {
   benchmarkPremium: number;
   hsaEligible: boolean;
   coverageYear: 2027;
+  incomeStability?: IncomeStability; // default "steady"; sets the safety cushion below the cliff
 };
 
 export type PlanStep = {

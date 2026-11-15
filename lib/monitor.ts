@@ -1,6 +1,6 @@
 import type { Input } from "./types";
 import { CLIFF_MULTIPLE, fpl, type CoverageYear } from "./engine";
-import { contributionFor, sepCapacity } from "./optimizer";
+import { contributionForCushion, safetyBufferFor, sepCapacity } from "./optimizer";
 
 // Helpers for the monitoring screen ("you are $X away from the cliff").
 // Pure functions, no I/O.
@@ -25,11 +25,13 @@ export function projectYearEnd(monthlyIncomes: number[], knownFuture = 0): numbe
   return Math.round(ytd + avg * remaining + Math.max(0, knownFuture));
 }
 
-type MonitorInput = Pick<Input, "householdSize" | "netSelfEmploymentIncome">;
+type MonitorInput = Pick<Input, "householdSize" | "netSelfEmploymentIncome" | "incomeStability">;
 
 /**
  * Extra SEP IRA contribution (on top of plannedContribution) needed to keep
- * projected MAGI under the cliff, with the usual $500 buffer and $500 rounding.
+ * projected MAGI under the cliff, with the cushion for the household's income stability
+ * ($500 steady / $2,000 uneven / $4,000 lumpy) and $500 rounding. For steady income it acts
+ * only above the cliff; for uneven/lumpy income also inside the cushion.
  * 0 if the planned contribution already keeps the family under the cliff.
  */
 export function topUpNeeded(
@@ -40,7 +42,9 @@ export function topUpNeeded(
 ): number {
   const cliff = CLIFF_MULTIPLE * fpl(input.householdSize, year);
   const overBy = projectedIncome - Math.max(0, plannedContribution) - cliff;
-  return contributionFor(overBy);
+  const stability = input.incomeStability ?? "steady";
+  if (stability === "steady" && overBy <= 0) return 0;
+  return contributionForCushion(overBy, safetyBufferFor(stability));
 }
 
 export type MonitorStatus = {
