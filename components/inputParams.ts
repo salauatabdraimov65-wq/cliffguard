@@ -21,6 +21,7 @@ export function inputToQuery(input: Input): string {
     ...(input.incomeStability ? { stab: input.incomeStability } : {}),
   });
   if (input.zip) q.set("zip", input.zip);
+  if (input.actualPlanPremium !== undefined) q.set("ap", String(Math.round(input.actualPlanPremium)));
   return q.toString();
 }
 
@@ -45,6 +46,7 @@ export function queryToInput(query: QueryLike): Input | null {
   const rawAges = (one(query.ages) ?? "").split("-").map(Number).filter((a) => Number.isFinite(a));
   const ages = Array.from({ length: hh }, (_, i) => rawAges[i] ?? (i < 2 ? 40 : 10));
   const zip = one(query.zip);
+  const ap = num(one(query.ap));
 
   return {
     householdSize: hh,
@@ -55,6 +57,7 @@ export function queryToInput(query: QueryLike): Input | null {
     netSelfEmploymentIncome: se >= 0 ? se : inc,
     benchmarkPremium: bp,
     hsaEligible: one(query.hsa) === "1",
+    ...(ap >= 0 ? { actualPlanPremium: ap } : {}),
     ...(isStability(one(query.stab)) ? { incomeStability: one(query.stab) as IncomeStability } : {}),
     coverageYear: 2027,
   };

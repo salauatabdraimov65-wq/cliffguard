@@ -19,6 +19,8 @@ import { usd, usdK } from "./format";
 export type CliffChartProps = {
   householdSize: number;
   benchmark: number;
+  /** Annual price of the plan actually bought; the credit can't exceed it. */
+  planPrice?: number;
   cliff: number;
   /** Household income as entered. */
   income: number;
@@ -52,6 +54,7 @@ const tickFmt = (top: number) => (v: number) =>
 export function CliffChart({
   householdSize,
   benchmark,
+  planPrice,
   cliff,
   income,
   magi,
@@ -77,13 +80,14 @@ export function CliffChart({
   }, []);
 
   const { step, min, max } = chartRange(cliff);
+  const credit = (x: number) => Math.min(subsidyFor(x, householdSize, benchmark), planPrice ?? Infinity);
   const points = useMemo(
     () =>
       Array.from({ length: 23 }, (_, i) => {
         const x = min + i * step;
-        return { x, y: subsidyFor(x, householdSize, benchmark) };
+        return { x, y: Math.min(subsidyFor(x, householdSize, benchmark), planPrice ?? Infinity) };
       }),
-    [min, step, householdSize, benchmark],
+    [min, step, householdSize, benchmark, planPrice],
   );
 
   const narrow = w < 520;
@@ -91,7 +95,7 @@ export function CliffChart({
   const pad = { l: narrow ? 40 : 48, r: narrow ? 8 : 16, t: 40, b: 32 };
   const pw = w - pad.l - pad.r;
   const ph = h - pad.t - pad.b;
-  const yMax = niceCeil(Math.max(...points.map((p) => p.y), subsidyFor(cliff, householdSize, benchmark), 1));
+  const yMax = niceCeil(Math.max(...points.map((p) => p.y), credit(cliff), 1));
   const band = pw / points.length;
   const barW = Math.min(24, Math.max(4, band - 2 - band * 0.3));
 
@@ -99,7 +103,7 @@ export function CliffChart({
   const sx = (v: number) => pad.l + ((clamp(v) - min) / (max - min)) * (pw - band) + band / 2;
   const sy = (v: number) => pad.t + ph - (v / yMax) * ph;
 
-  const userSubsidy = subsidyFor(magi, householdSize, benchmark);
+  const userSubsidy = credit(magi);
   const over = magi > cliff;
   // nearest column on the same side of the cliff as the household (index 11 = the cliff itself)
   const nearest = Math.round((clamp(magi) - min) / step);

@@ -174,6 +174,7 @@ export function Diagnosis({ input, demo }: { input: Input; demo: boolean }) {
           <CliffChart
             householdSize={input.householdSize}
             benchmark={input.benchmarkPremium}
+            planPrice={input.actualPlanPremium}
             cliff={res.cliff}
             income={income}
             magi={magi}
