@@ -9,6 +9,7 @@ type Parsed = {
   confidence: "low" | "medium" | "high";
   months: number;
   excludedCount: number;
+  aiClassified?: number;
   explanation?: string;
 };
 
@@ -63,7 +64,7 @@ export function IncomeUpload({ onIncome }: { onIncome: (annual: number) => void 
     <div className="flex flex-col gap-3 rounded-xl border border-dashed border-line-strong p-4">
       <div className="flex flex-col gap-1">
         <p className="text-[15px] font-medium">Upload invoices or a bank CSV</p>
-        <p className="text-sm text-ink-3">Optional. We keep client payments, skip transfers and refunds, and store nothing.</p>
+        <p className="text-sm text-ink-3">Optional. We keep client payments, skip transfers and refunds, and store nothing. Unclear rows may be checked by AI.</p>
       </div>
       <div className="flex flex-col gap-2 sm:flex-row">
         <input ref={input} type="file" accept=".csv,text/csv" className="sr-only" id="csv" onChange={(e) => onFile(e.target.files?.[0])} />
@@ -88,7 +89,8 @@ export function IncomeUpload({ onIncome }: { onIncome: (annual: number) => void 
           </p>
           <p className="text-ink-3">
             Confidence: {result.confidence}
-            {result.excludedCount > 0 && ` · ${result.excludedCount} transfers or refunds skipped`}. We filled in the projection — adjust it if you
+            {result.excludedCount > 0 && ` · ${result.excludedCount} transfers or refunds skipped`}
+            {!!result.aiClassified && ` · ${result.aiClassified} unclear rows checked by AI`}. We filled in the projection — adjust it if you
             expect a change.
           </p>
           {result.explanation && <p className="text-ink-2">{result.explanation}</p>}

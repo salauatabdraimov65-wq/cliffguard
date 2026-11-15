@@ -1,12 +1,15 @@
-import { parseIncomeCsv, ParseIncomeError } from "@/lib/parseIncome";
+import { parseIncomeRows, ParseIncomeError, summarizeIncome } from "@/lib/parseIncome";
+import { classifyAmbiguous } from "@/lib/classifyRows";
 import { explainIncome } from "@/lib/incomeExplain";
 
 const MAX_CSV_BYTES = 1_000_000;
 
 // POST /api/parse-income  body: { csv: string }
-// -> 200 { transactions: {date, amount, payer}[], projectedAnnualIncome, confidence, months, excludedCount, explanation? }
+// -> 200 { transactions: {date, amount, payer}[], projectedAnnualIncome, confidence, months, excludedCount,
+//          aiClassified, explanation? }
 // -> 400 { error }
-// Deterministic parsing; nothing is stored. AI explanation only if an API key is configured.
+// Keyword rules are the base; only ambiguous incoming rows go to the model (if OPENAI_API_KEY is set)
+// for income | own_transfer | refund. Totals are always computed here. Nothing is stored.
 export async function POST(request: Request) {
   let body: unknown;
   try {
@@ -23,7 +26,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const parsed = parseIncomeCsv(csv);
+    const { rows, months } = parseIncomeRows(csv);
+    const classified = await classifyAmbiguous(rows);
+    const parsed = { ...summarizeIncome(classified.rows, months), aiClassified: classified.aiClassified };
     const explanation = await explainIncome(parsed);
     return Response.json(explanation ? { ...parsed, explanation } : parsed);
   } catch (e) {
