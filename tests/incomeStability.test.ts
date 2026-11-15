@@ -59,11 +59,11 @@ describe("incomeStability -> safety cushion", () => {
     expect(cheap.plan.map((s) => s.account)).toEqual(["MARKETPLACE_UPDATE"]);
   });
 
-  it("infeasible: cushion explanation first, then the infeasible warning", () => {
+  it("infeasible: the infeasible warning stays first (UI banner), cushion second", () => {
     const r = at({ ...demoFamily, income: 180000, netSelfEmploymentIncome: 180000, hsaEligible: true, incomeStability: "uneven" });
     expect(r.feasible).toBe(false);
     expect(r.contributionNeeded).toBe(50000);
-    expect(r.warnings).toEqual([UNEVEN, "Even maximum contributions can't bring you under the cliff this year."]);
+    expect(r.warnings).toEqual(["Even maximum contributions can't bring you under the cliff this year.", UNEVEN]);
   });
 
   it("monitor top-up uses the same cushion", () => {

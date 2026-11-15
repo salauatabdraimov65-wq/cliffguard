@@ -164,7 +164,8 @@ export function optimize(a: OptimizeArgs): OptimizeResult {
       sepClosed || (hsaClosed && sepCap === 0)
         ? ["The deadline for 2027 contributions has passed."]
         : ["Even maximum contributions can't bring you under the cliff this year."];
-    return noAction(cushion ? [cushion, ...warnings] : warnings, needed, false);
+    // The reason it is infeasible stays warnings[0]: the UI shows it in the banner.
+    return noAction(cushion ? [...warnings, cushion] : warnings, needed, false);
   }
 
   const sep = Math.min(needed, sepCap);
