@@ -15,10 +15,21 @@ const plexMono = IBM_Plex_Mono({
   weight: ["400", "500"],
 });
 
+const DESCRIPTION =
+  "For self-employed families on the ACA Marketplace: see what the 400% FPL subsidy cliff costs you and the legal way to get back under it.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://cliffguard.vercel.app"),
   title: "CliffGuard — Earn $1 more. Lose $10,500.",
-  description:
-    "For self-employed families on the ACA Marketplace: see what the 400% FPL subsidy cliff costs you and the legal way to get back under it.",
+  description: DESCRIPTION,
+  openGraph: {
+    title: "CliffGuard — Earn $1 more. Lose $10,500.",
+    description: DESCRIPTION,
+    url: "https://cliffguard.vercel.app",
+    siteName: "CliffGuard",
+    type: "website",
+  },
+  twitter: { card: "summary_large_image", title: "CliffGuard — Earn $1 more. Lose $10,500.", description: DESCRIPTION },
 };
 
 export const viewport: Viewport = {

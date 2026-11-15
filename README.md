@@ -4,7 +4,14 @@
 
 **Earn $1 more. Lose $10,500. We make sure that doesn't happen.**
 
-Live demo: **https://cliffguard.vercel.app** — click **“Try demo family”**, no login needed.
+**Live product: https://cliffguard.vercel.app** — no login. Click **“Try demo family”**, or jump straight in:
+
+| What to see | Link |
+|---|---|
+| Diagnosis with the income slider + “Ask CliffGuard” | https://cliffguard.vercel.app/diagnosis?demo=1 |
+| Rescue plan + “In plain English” explanation | https://cliffguard.vercel.app/plan?demo=1 |
+| Year-round monitoring | https://cliffguard.vercel.app/monitor |
+| Your own numbers (60-second quiz) | https://cliffguard.vercel.app/quiz |
 
 CliffGuard is a web app for self-employed US families who buy health insurance on the ACA Marketplace (healthcare.gov and state exchanges).
 Since January 1, 2026 the enhanced subsidies have expired and the **400% FPL “subsidy cliff”** is back: if household MAGI is even $1 above 400% of the Federal Poverty Level, the Premium Tax Credit drops to **$0**.
@@ -14,6 +21,7 @@ CliffGuard:
 1. **Diagnoses** how much a family loses by crossing the cliff (with an interactive income slider).
 2. **Plans** a legal way back under it — pre-tax contributions to a **SEP IRA** and an **HSA** lower MAGI.
 3. **Monitors** income through the year so the family doesn't have to repay subsidies when they file taxes.
+4. **Explains and answers** with AI: a plain-English summary of the plan, “Ask CliffGuard” what-ifs (“What if I earn $8,000 more?”), and a second look at unclear bank-statement rows. **The AI never computes a number**: every figure comes from our engine, and answers containing any other number are rejected.
 
 > CliffGuard is an **educational estimate**. It does not sell insurance, open accounts, move money, or give tax advice. Confirm with a tax professional.
 
@@ -48,7 +56,8 @@ Optional environment variables (copy `.env.example` to `.env.local`; never commi
 |---|---|
 | `STRIPE_SECRET_KEY` | Stripe Checkout, **test mode only** (`sk_test_…`; live keys are rejected) |
 | `NEXT_PUBLIC_SITE_URL` | Base URL for Stripe redirects (defaults to the request origin) |
-| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | Optional plain-English explanation in `/api/parse-income`. Without a key, parsing works exactly the same, just without the explanation |
+| `OPENAI_API_KEY` | AI features (plan explanation, Ask CliffGuard, unclear CSV rows). Server-only. Without it every feature still works with deterministic templates and rules |
+| `OPENAI_MODEL` | Optional, default `gpt-4o-mini` |
 
 ## Where the math lives
 
@@ -82,6 +91,9 @@ The optimizer rounds the needed contribution up to $500 with a $500 safety buffe
 | `POST /api/calc` | `Input` (see `lib/types.ts`) | `Result`, or `400 { error }` |
 | `POST /api/parse-income` | `{ csv: string }` | `{ transactions: {date, amount, payer}[], projectedAnnualIncome, confidence, months, excludedCount, explanation? }` |
 | `POST /api/repayment-risk` | `{ householdSize, estimatedIncome, actualIncome, benchmarkPremium2026, netSelfEmploymentIncome, hsaEligible, ages? }` | Tax-year 2026 APTC repayment check: `{ aptcReceived, ptcAllowed, repaymentOwed, contributionToAvoid, repaymentAfterFix, deadlines, … }` |
+| `POST /api/explain` | `{ input }` | `{ explanation, source: "ai" \| "template", reason? }` — 3–4 plain-English sentences, numbers from the engine only |
+| `POST /api/ask` | `{ input, question }` | `{ answer, scenario?: { input, result }, source: "ai" \| "rules", reason? }` — the model calls our `calculate` tool (max 3 times) |
+| `GET /api/ai-status` | — | Is the OpenAI key set and accepted on this deployment (never returns the key) |
 | `POST /api/checkout` | `{ interval?: "year" \| "month" }` | `{ url }` (Stripe Checkout, test mode) |
 
 `/api/parse-income` keeps only incoming payments (> 0), drops transfers between your own accounts, refunds and interest, and projects `income / months × 12`. Confidence is `low` under 3 months, `medium` for 3–6 and `high` above 6. Nothing is stored. Sample file: [`public/demo-bank.csv`](public/demo-bank.csv) (8 months, $84,000 of client payments → $126,000/year).
