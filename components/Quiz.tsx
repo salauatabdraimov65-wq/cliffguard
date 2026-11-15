@@ -33,7 +33,7 @@ export function Quiz() {
   const [size, setSize] = useState(2);
   const [ages, setAges] = useState<string[]>(["", ""]);
   const [income, setIncome] = useState("");
-  const [steady, setSteady] = useState<Steady>("uneven");
+  const [steady, setSteady] = useState<Steady>("steady");
   const [earn, setEarn] = useState<Earn>("freelance");
   const [seIncome, setSeIncome] = useState("");
   const [premium, setPremium] = useState("");
