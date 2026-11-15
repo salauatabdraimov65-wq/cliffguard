@@ -1,6 +1,6 @@
 import type { IncomeStability, Input, Result } from "./types";
 import { calculate } from "./engine";
-import { DEFAULT_OPENAI_MODEL, DISCLAIMER, planFacts, templateExplanation, usesOnlyKnownNumbers } from "./explain";
+import { DEFAULT_OPENAI_MODEL, DISCLAIMER, logAiFallback, openAiError, planFacts, redact, templateExplanation, unknownNumbers } from "./explain";
 
 // "Ask CliffGuard": what-if questions about the subsidy and the plan.
 // The model never computes numbers. It changes Input fields and calls OUR engine through the
@@ -17,7 +17,7 @@ export type Changes = {
 };
 
 export type Scenario = { changes: Changes; input: Input; result: Result };
-export type AskResponse = { answer: string; scenario?: Scenario; source: "ai" | "rules" };
+export type AskResponse = { answer: string; scenario?: Scenario; source: "ai" | "rules"; reason?: string };
 
 const MAX_TOOL_CALLS = 3;
 const TIMEOUT_MS = 8000;
@@ -190,9 +190,13 @@ export async function askCliffGuard(
   opts: { apiKey?: string; model?: string; fetchImpl?: FetchLike; timeoutMs?: number; today?: string } = {},
 ): Promise<AskResponse> {
   const q = question.trim().slice(0, MAX_QUESTION);
-  const fallback = () => rulesAnswer(base, q, opts.today);
+  const fallback = (reason: string): AskResponse => {
+    logAiFallback("ask", reason);
+    return { ...rulesAnswer(base, q, opts.today), reason };
+  };
   const apiKey = opts.apiKey ?? process.env.OPENAI_API_KEY;
-  if (!apiKey || !q) return fallback();
+  if (!apiKey) return fallback("no_key");
+  if (!q) return fallback("empty_question");
 
   const baseResult = calculate(base, opts.today ? { today: opts.today } : {});
   const deadline = Date.now() + (opts.timeoutMs ?? TIMEOUT_MS);
@@ -214,7 +218,7 @@ export async function askCliffGuard(
   try {
     for (let turn = 0; turn <= MAX_TOOL_CALLS; turn++) {
       const left = deadline - Date.now();
-      if (left <= 0) return fallback();
+      if (left <= 0) return fallback("timeout");
       const res = await (opts.fetchImpl ?? fetch)("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
@@ -229,10 +233,10 @@ export async function askCliffGuard(
         }),
         signal: AbortSignal.timeout(left),
       });
-      if (!res.ok) return fallback();
+      if (!res.ok) return fallback(await openAiError(res));
       const data = (await res.json()) as { choices?: { message?: Message }[] };
       const msg = data.choices?.[0]?.message;
-      if (!msg) return fallback();
+      if (!msg) return fallback("empty_response");
 
       if (msg.tool_calls?.length) {
         messages.push({ role: "assistant", content: msg.content ?? null, tool_calls: msg.tool_calls });
@@ -253,17 +257,17 @@ export async function askCliffGuard(
       }
 
       let parsed: { answer?: unknown; off_topic?: unknown } = {};
-      try { parsed = JSON.parse(msg.content ?? ""); } catch { return fallback(); }
+      try { parsed = JSON.parse(msg.content ?? ""); } catch { return fallback("invalid_json"); }
       if (parsed.off_topic === true) return { answer: OFF_TOPIC_ANSWER, source: "ai" };
       let answer = typeof parsed.answer === "string" ? parsed.answer.trim() : "";
-      if (!answer) return fallback();
-      if (!usesOnlyKnownNumbers(answer, allowed)) return fallback();
+      if (!answer) return fallback("empty_answer");
+      const unknown = unknownNumbers(answer, allowed);
+      if (unknown.length) return fallback(`unknown_numbers: ${unknown.slice(0, 5).join(", ")}`);
       if (!answer.endsWith(DISCLAIMER)) answer = `${answer.replace(/\s*Educational estimate.*$/i, "")} ${DISCLAIMER}`.trim();
       return { answer, scenario, source: "ai" };
     }
-    return fallback();
+    return fallback("too_many_turns");
   } catch (e) {
-    console.error("Ask CliffGuard failed; using rules", e instanceof Error ? e.message : e);
-    return fallback();
+    return fallback(redact(e instanceof Error ? `${e.name}: ${e.message}` : "error"));
   }
 }

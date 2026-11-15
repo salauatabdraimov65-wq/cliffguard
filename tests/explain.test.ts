@@ -47,10 +47,28 @@ describe("explainPlan", () => {
     expect((init.headers as Record<string, string>).authorization).toBe("Bearer sk-test");
   });
 
-  it("AI invents a number -> template", async () => {
+  it("AI invents a number -> template, with the reason", async () => {
     const fetchImpl = vi.fn(async () => okResponse(`You could save $12,345 this year. ${DISCLAIMER}`));
     const r = await explainPlan(demo, demoFamily, { apiKey: "sk-test", fetchImpl });
     expect(r.source).toBe("template");
+    expect(r.reason).toBe("unknown_numbers: 12345");
+  });
+
+  it("monthly amounts and 400% FPL are allowed", async () => {
+    const fetchImpl = vi.fn(async () =>
+      okResponse(`Above 400% of the poverty line the credit stops. Putting $4,500 in a SEP IRA (about $375 a month) keeps about $10,561 a year. ${DISCLAIMER}`),
+    );
+    const r = await explainPlan(demo, demoFamily, { apiKey: "sk-test", fetchImpl });
+    expect(r.source).toBe("ai");
+  });
+
+  it("OpenAI HTTP error -> reason has status and message, key redacted", async () => {
+    const fetchImpl = vi.fn(async () =>
+      new Response(JSON.stringify({ error: { code: "invalid_api_key", message: "Incorrect API key provided: sk-proj-abcdefgh1234." } }), { status: 401 }),
+    );
+    const r = await explainPlan(demo, demoFamily, { apiKey: "sk-test", fetchImpl });
+    expect(r.reason).toMatch(/^http_401: invalid_api_key/);
+    expect(r.reason).not.toMatch(/abcdefgh1234/);
   });
 
   it("adds the disclaimer if the model forgot it", async () => {
