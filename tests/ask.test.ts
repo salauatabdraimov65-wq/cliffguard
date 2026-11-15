@@ -139,4 +139,15 @@ describe("Ask CliffGuard without a key (rules)", () => {
     const r = calculate(demoFamily, { today: TODAY });
     expect([r.loss, r.contributionNeeded, r.subsidyAfterPlan]).toEqual([10510, 4500, 10561]);
   });
+
+  it("AI may repeat numbers from the question and simple differences ('$8,000 more')", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(toolCall({ ...ALL_NULL, income: 144000 }))
+      .mockResolvedValueOnce(
+        final(`Earning $8,000 more puts you at $144,000, so you would need to put aside $8,000 more than today ($12,500 in total). ${DISCLAIMER}`),
+      );
+    const r = await askCliffGuard(demoFamily, "what if I earn $8,000 more?", { apiKey: "k", fetchImpl, today: TODAY });
+    expect(r.source).toBe("ai");
+  });
 });

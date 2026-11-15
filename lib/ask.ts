@@ -67,6 +67,17 @@ function runScenario(base: Input, changes: Changes, today?: string): Scenario {
 
 const MONEY = /\$?\s*(\d[\d,]*(?:\.\d+)?)\s*(k|thousand)?/i;
 
+/** Every amount the user typed, e.g. "$8,000" or "8k" -> 8000. */
+export function numbersInQuestion(text: string): number[] {
+  const out: number[] = [];
+  for (const m of text.matchAll(/\$?\s*(\d[\d,]*(?:\.\d+)?)\s*(k|thousand)?/gi)) {
+    let v = Number(m[1].replace(/,/g, ""));
+    if (m[2]) v *= 1000;
+    if (Number.isFinite(v)) out.push(v, Math.round(v / 12), v * 12);
+  }
+  return out;
+}
+
 function money(text: string): number | null {
   const m = text.match(MONEY);
   if (!m) return null;
@@ -200,7 +211,13 @@ export async function askCliffGuard(
 
   const baseResult = calculate(base, opts.today ? { today: opts.today } : {});
   const deadline = Date.now() + (opts.timeoutMs ?? TIMEOUT_MS);
-  const allowed: Record<string, unknown>[] = [planFacts(baseResult, base)];
+  // Allowed numbers: the household, our engine's results, the user's own question, and simple
+  // differences between a scenario and today (e.g. "$8,000 more").
+  const allowed: Record<string, unknown>[] = [
+    planFacts(baseResult, base),
+    { income: base.income, householdSize: base.householdSize, planPrice: base.actualPlanPremium ?? base.benchmarkPremium },
+    { fromQuestion: numbersInQuestion(q) },
+  ];
   const messages: Message[] = [
     { role: "system", content: SYSTEM_PROMPT },
     {
@@ -250,7 +267,14 @@ export async function askCliffGuard(
           try { args = JSON.parse(call.function.arguments); } catch { /* empty changes */ }
           scenario = runScenario(base, toChanges(args), opts.today);
           const facts = { changedInput: scenario.changes, ...planFacts(scenario.result, scenario.input) };
-          allowed.push(facts, scenario.changes as Record<string, unknown>, { income: scenario.input.income, householdSize: scenario.input.householdSize });
+          allowed.push(facts, scenario.changes as Record<string, unknown>, {
+            income: scenario.input.income,
+            householdSize: scenario.input.householdSize,
+            incomeChange: Math.abs(scenario.input.income - base.income),
+            lossChange: Math.abs(scenario.result.loss - baseResult.loss),
+            contributionChange: Math.abs(scenario.result.contributionNeeded - baseResult.contributionNeeded),
+            creditChange: Math.abs(scenario.result.subsidyAfterPlan - baseResult.subsidyAfterPlan),
+          });
           messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(facts) });
         }
         continue;

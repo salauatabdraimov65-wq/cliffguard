@@ -85,6 +85,9 @@ export function AskCliffGuard({ input }: { input: Input }) {
 
       {reply && (
         <div aria-live="polite" className="flex flex-col gap-3 rounded-xl border border-line bg-raised px-4 py-3">
+          {reply.source === "ai" && (
+            <span className="w-fit rounded-md bg-card px-2 py-0.5 font-mono text-[12px] text-ink-3">AI · numbers from our calculator</span>
+          )}
           <p className="leading-relaxed text-ink-2">{reply.answer}</p>
           {s && (
             <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
@@ -98,7 +101,9 @@ export function AskCliffGuard({ input }: { input: Input }) {
               </div>
               <div>
                 <dt className="text-ink-3">Put aside</dt>
-                <dd className="font-semibold num">{usd(s.contributionNeeded)}</dd>
+                <dd className="font-semibold num">
+                  {s.feasible ? usd(s.contributionNeeded) : <span className="text-ink-3">Not enough room</span>}
+                </dd>
               </div>
               <div>
                 <dt className="text-ink-3">Credit after plan</dt>
