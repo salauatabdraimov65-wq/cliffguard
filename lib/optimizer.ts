@@ -1,4 +1,4 @@
-import type { Input, PlanStep } from "./types";
+import type { IncomeStability, Input, PlanStep } from "./types";
 import limits2027 from "../data/limits-2027.json";
 import { formatDate, isPast, stateRule } from "./stateRules";
 
@@ -64,6 +64,29 @@ export function contributionFor(
   return Math.ceil((overBy + lim.safetyBuffer) / lim.roundTo) * lim.roundTo;
 }
 
+/** Safety cushion below the cliff for a given income stability (default "steady"). */
+export function safetyBufferFor(stability: IncomeStability = "steady"): number {
+  return limits.safetyBufferByStability[stability] ?? limits.safetyBuffer;
+}
+
+/**
+ * Contribution that keeps MAGI at least `buffer` below the cliff, rounded up.
+ * `overBy` may be negative (already under the cliff but inside the cushion).
+ */
+export function contributionForCushion(overBy: number, buffer: number): number {
+  const gap = overBy + buffer;
+  if (gap <= 0) return 0;
+  return Math.ceil(gap / limits.roundTo) * limits.roundTo;
+}
+
+export function cushionWarning(stability: IncomeStability, buffer: number): string | null {
+  if (stability === "uneven") return `Your income is uneven, so we keep a ${usd(buffer)} cushion below the cliff.`;
+  if (stability === "lumpy") {
+    return `Your income comes in a few big payments, so we keep a ${usd(buffer)} cushion below the cliff.`;
+  }
+  return null;
+}
+
 function marketplaceStep(reportedMagi: number, state: string, today: string): PlanStep {
   const oeEnd = stateRule(state).openEnrollmentEnd;
   if (!isPast(oeEnd, today)) {
@@ -118,10 +141,18 @@ export function optimize(a: OptimizeArgs): OptimizeResult {
     warnings,
   });
 
-  // Below the cliff, or crossing it costs ~nothing (cheap benchmark plan): no contributions needed.
-  if (overBy <= 0 || Math.round(a.loss) === 0) return noAction();
+  const stability = input.incomeStability ?? "steady";
+  const buffer = safetyBufferFor(stability);
+  // Steady income: act only above the cliff. Uneven/lumpy income: also act when MAGI sits
+  // inside the cushion just below the cliff, because a good month can push it over.
+  const actualOverBy = magi - a.cliff;
+  const inCushion = stability !== "steady" && actualOverBy > -buffer;
+  // Crossing costs ~nothing (cheap benchmark plan): no contributions needed.
+  const atRisk = overBy > 0 ? a.loss : subsidyAt(a.cliff);
+  if ((overBy <= 0 && !inCushion) || Math.round(atRisk) === 0) return noAction();
 
-  const needed = contributionFor(overBy);
+  const cushion = cushionWarning(stability, buffer);
+  const needed = contributionForCushion(actualOverBy, buffer);
   // A lever whose 2027 deadline has passed can no longer be used.
   const sepClosed = isPast(TAX_2027.extension, today);
   const hsaClosed = isPast(TAX_2027.filing, today);
@@ -133,7 +164,8 @@ export function optimize(a: OptimizeArgs): OptimizeResult {
       sepClosed || (hsaClosed && sepCap === 0)
         ? ["The deadline for 2027 contributions has passed."]
         : ["Even maximum contributions can't bring you under the cliff this year."];
-    return noAction(warnings, needed, false);
+    // The reason it is infeasible stays warnings[0]: the UI shows it in the banner.
+    return noAction(cushion ? [...warnings, cushion] : warnings, needed, false);
   }
 
   const sep = Math.min(needed, sepCap);
@@ -163,6 +195,6 @@ export function optimize(a: OptimizeArgs): OptimizeResult {
     subsidyAfterPlan,
     estTaxSavings,
     netBenefit,
-    warnings: [],
+    warnings: cushion ? [cushion] : [],
   };
 }

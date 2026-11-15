@@ -12,6 +12,12 @@
   "sep415cCap": 72000,
   "sep415cCapNote": "TODO(verify) 2026 section 415(c) limit; 2027 not published.",
   "safetyBuffer": 500,
+  "safetyBufferByStability": {
+    "steady": 500,
+    "uneven": 2000,
+    "lumpy": 4000
+  },
+  "safetyBufferNote": "Cushion kept below the cliff, by how steady income is (Input.incomeStability).",
   "roundTo": 500,
   "taxRateEstimate": 0.22
 }
