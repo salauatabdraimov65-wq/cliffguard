@@ -101,8 +101,8 @@ describe("plan deadlines relative to today", () => {
     expect(at(noZip, TODAY)).toEqual(base);
     // ages matter only for the HSA 55+ catch-up
     expect(at({ ...demoFamily, ages: [60, 58, 8, 5] }, TODAY)).toEqual(base);
-    // ...where a 55+ member adds $1,000 of HSA room: 9,500 needed vs 9,000 family limit
-    const hsaOnly = { ...demoFamily, income: 141000, netSelfEmploymentIncome: 0, hsaEligible: true };
+    // ...where a 55+ member adds $1,000 of HSA room: $9,500 over the cliff vs a $9,000 family limit
+    const hsaOnly = { ...demoFamily, income: 141500, netSelfEmploymentIncome: 0, hsaEligible: true };
     expect(at(hsaOnly, TODAY).feasible).toBe(false);
     expect(at({ ...hsaOnly, ages: [56, 36, 8, 5] }, TODAY).feasible).toBe(true);
   });

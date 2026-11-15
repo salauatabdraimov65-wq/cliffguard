@@ -42,6 +42,17 @@ describe("monitor", () => {
       topUp: 2500,
       sepRoomLeft: 27200 - 4500 - 2500, // SEP cap = 20% of 136,000 net SE = 27,200
       feasible: true,
+      noMargin: false,
     });
+  });
+
+  it("monitorStatus: cushion doesn't fit, cliff does -> top up to the cliff, noMargin", () => {
+    // projected 138,000, nothing planned, SEP room 6,000 (net SE 30,000): needs 6,500 with cushion
+    const s = monitorStatus(new Array(12).fill(11500), 0, 0, { ...demoFamily, netSelfEmploymentIncome: 30000 });
+    expect(s.projectedIncome).toBe(138000);
+    expect(s.topUp).toBe(6000);
+    expect(s.sepRoomLeft).toBe(0);
+    expect(s.feasible).toBe(true);
+    expect(s.noMargin).toBe(true);
   });
 });

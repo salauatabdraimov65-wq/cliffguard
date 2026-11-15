@@ -55,6 +55,7 @@ export type MonitorStatus = {
   topUp: number; // extra SEP IRA contribution needed
   sepRoomLeft: number; // SEP capacity left after planned + topUp (can be negative)
   feasible: boolean; // planned + topUp fits within SEP capacity
+  noMargin: boolean; // topUp only reaches the cliff itself, no safety cushion left
 };
 
 /** Everything the monitoring screen needs in one call. */
@@ -68,8 +69,16 @@ export function monitorStatus(
   const projectedIncome = projectYearEnd(monthlyIncomes, knownFuture);
   const cliff = CLIFF_MULTIPLE * fpl(input.householdSize, year);
   const projectedMagi = projectedIncome - Math.max(0, plannedContribution);
-  const topUp = topUpNeeded(projectedIncome, plannedContribution, input, year);
-  const sepRoomLeft = Math.round(sepCapacity(input) - plannedContribution - topUp);
+  const room = Math.round(sepCapacity(input) - Math.max(0, plannedContribution));
+  let topUp = topUpNeeded(projectedIncome, plannedContribution, input, year);
+  let noMargin = false;
+  // The cushion doesn't fit, but reaching the cliff itself does (MAGI <= cliff keeps the credit).
+  const over = projectedMagi - cliff;
+  if (topUp > room && over <= room) {
+    topUp = over > 0 ? Math.min(Math.ceil(over / 100) * 100, room) : Math.max(0, room);
+    noMargin = over > 0;
+  }
+  const sepRoomLeft = room - topUp;
   return {
     projectedIncome,
     cliff,
@@ -78,5 +87,6 @@ export function monitorStatus(
     topUp,
     sepRoomLeft,
     feasible: sepRoomLeft >= 0,
+    noMargin,
   };
 }

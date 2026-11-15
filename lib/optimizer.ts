@@ -79,6 +79,11 @@ export function contributionForCushion(overBy: number, buffer: number): number {
   return Math.ceil(gap / limits.roundTo) * limits.roundTo;
 }
 
+export const NO_MARGIN_WARNING =
+  "This brings you right to the cliff with no safety margin — any extra income will cost the full credit.";
+export const PARTIAL_CUSHION_WARNING =
+  "This is the most you can contribute, so your safety margin below the cliff is smaller than we'd like.";
+
 export function cushionWarning(stability: IncomeStability, buffer: number): string | null {
   if (stability === "uneven") return `Your income is uneven, so we keep a ${usd(buffer)} cushion below the cliff.`;
   if (stability === "lumpy") {
@@ -159,17 +164,31 @@ export function optimize(a: OptimizeArgs): OptimizeResult {
   const sepCap = sepClosed ? 0 : sepCapacity(input);
   const hsaCap = hsaClosed ? 0 : hsaCapacity(input);
 
-  if (needed > sepCap + hsaCap) {
-    const warnings =
-      sepClosed || (hsaClosed && sepCap === 0)
-        ? ["The deadline for 2027 contributions has passed."]
-        : ["Even maximum contributions can't bring you under the cliff this year."];
-    // The reason it is infeasible stays warnings[0]: the UI shows it in the banner.
-    return noAction(cushion ? [...warnings, cushion] : warnings, needed, false);
+  const capacity = sepCap + hsaCap;
+  let contribution = needed;
+  const extra: string[] = [];
+
+  if (needed > capacity) {
+    if (actualOverBy > 0 && actualOverBy <= capacity) {
+      // Can't keep the cushion, but can still reach the cliff itself (MAGI <= cliff keeps the credit).
+      contribution = Math.min(Math.ceil(actualOverBy / 100) * 100, capacity);
+      extra.push(NO_MARGIN_WARNING);
+    } else if (actualOverBy <= 0) {
+      // Already under the cliff (inside the cushion): build as much cushion as the limits allow.
+      contribution = capacity;
+      extra.push(PARTIAL_CUSHION_WARNING);
+    } else {
+      const warnings =
+        sepClosed || (hsaClosed && sepCap === 0)
+          ? ["The deadline for 2027 contributions has passed."]
+          : ["Even maximum contributions can't bring you under the cliff this year."];
+      // The reason it is infeasible stays warnings[0]: the UI shows it in the banner.
+      return noAction(cushion ? [...warnings, cushion] : warnings, needed, false);
+    }
   }
 
-  const sep = Math.min(needed, sepCap);
-  const hsa = needed - sep;
+  const sep = Math.min(contribution, sepCap);
+  const hsa = contribution - sep;
   const total = sep + hsa;
   const magiAfterPlan = magi - total;
   const subsidyAfterPlan = subsidyAt(magiAfterPlan);
@@ -190,11 +209,11 @@ export function optimize(a: OptimizeArgs): OptimizeResult {
   return {
     plan,
     feasible: true,
-    contributionNeeded: needed,
+    contributionNeeded: contribution,
     magiAfterPlan,
     subsidyAfterPlan,
     estTaxSavings,
     netBenefit,
-    warnings: cushion ? [cushion] : [],
+    warnings: [...extra, ...(cushion ? [cushion] : [])],
   };
 }
