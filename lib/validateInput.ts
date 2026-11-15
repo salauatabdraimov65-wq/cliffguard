@@ -37,6 +37,9 @@ export function validateInput(body: unknown): ValidationResult {
   if (b.incomeStability !== undefined && !["steady", "uneven", "lumpy"].includes(b.incomeStability as string)) {
     return { ok: false, error: 'incomeStability must be "steady", "uneven" or "lumpy".' };
   }
+  if (b.actualPlanPremium !== undefined && (!isNum(b.actualPlanPremium) || b.actualPlanPremium < 0 || b.actualPlanPremium > 100_000_000)) {
+    return { ok: false, error: "actualPlanPremium must be a non-negative number." };
+  }
   if (b.coverageYear !== 2027) {
     return { ok: false, error: "coverageYear must be 2027." };
   }
@@ -53,6 +56,7 @@ export function validateInput(body: unknown): ValidationResult {
       benchmarkPremium: b.benchmarkPremium as number,
       hsaEligible: b.hsaEligible,
       coverageYear: 2027,
+      ...(b.actualPlanPremium !== undefined ? { actualPlanPremium: b.actualPlanPremium as number } : {}),
       ...(b.incomeStability !== undefined ? { incomeStability: b.incomeStability as Input["incomeStability"] } : {}),
     },
   };

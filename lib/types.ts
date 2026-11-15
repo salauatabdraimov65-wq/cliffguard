@@ -11,6 +11,7 @@ export type Input = {
   hsaEligible: boolean;
   coverageYear: 2027;
   incomeStability?: IncomeStability; // default "steady"; sets the safety cushion below the cliff
+  actualPlanPremium?: number; // annual price of the plan actually bought, USD; default = benchmarkPremium
 };
 
 export type PlanStep = {
@@ -35,5 +36,7 @@ export type Result = {
   subsidyAfterPlan: number;
   estTaxSavings: number;
   netBenefit: number;
+  premiumYouPay: number; // annual: max(0, plan price - subsidy), before the plan
+  premiumYouPayAfterPlan: number; // annual: max(0, plan price - subsidyAfterPlan)
   warnings: string[];
 };
