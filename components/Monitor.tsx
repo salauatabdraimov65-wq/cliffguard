@@ -87,6 +87,7 @@ export function Monitor({ input, demo }: { input: Input; demo: boolean }) {
                 <>
                   Add <span className="font-semibold text-ink num">{usd(status.topUp)}</span> to your SEP IRA to stay under. That still leaves{" "}
                   <span className="num">{usd(status.sepRoomLeft)}</span> of SEP room.
+                  {status.noMargin && " That lands right at the cliff with no safety margin, so any extra income costs the full credit."}
                 </>
               ) : (
                 <>Your SEP IRA room isn&apos;t enough to cover the {usd(status.topUp)} top-up. Update your Marketplace income to avoid a repayment.</>

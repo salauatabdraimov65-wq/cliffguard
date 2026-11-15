@@ -104,6 +104,26 @@ export function PlanView({ input: initial, demo, paid, canceled }: Props) {
         </p>
       </div>
 
+      <dl className="enter flex flex-wrap gap-x-8 gap-y-3 rounded-xl border border-line bg-card px-5 py-4">
+        <div className="flex flex-col">
+          <dt className="text-sm text-ink-3">You pay for your plan now</dt>
+          <dd className="text-xl font-semibold num">
+            {usd(res.premiumYouPay / 12)}<span className="text-sm font-normal text-ink-3"> /mo</span>
+          </dd>
+        </div>
+        {rescue && (
+          <div className="flex flex-col">
+            <dt className="text-sm text-ink-3">After the plan</dt>
+            <dd className="text-xl font-semibold text-safe-ink num">
+              {usd(res.premiumYouPayAfterPlan / 12)}<span className="text-sm font-normal text-ink-3"> /mo</span>
+            </dd>
+          </div>
+        )}
+        <p className="basis-full text-[13px] text-ink-3">
+          {input.actualPlanPremium !== undefined ? "Your plan" : "Benchmark plan"}: {usd((input.actualPlanPremium ?? input.benchmarkPremium) / 12)}/mo before the credit. Estimate.
+        </p>
+      </dl>
+
       {canceled && !unlocked && (
         <p className="rounded-xl border border-line bg-card px-4 py-3 text-sm text-ink-2">Checkout canceled. Your first step is still here.</p>
       )}

@@ -37,6 +37,7 @@ export function Quiz() {
   const [earn, setEarn] = useState<Earn>("freelance");
   const [seIncome, setSeIncome] = useState("");
   const [premium, setPremium] = useState("");
+  const [planPrice, setPlanPrice] = useState("");
   const [hsa, setHsa] = useState(false);
   const [error, setError] = useState("");
   const headRef = useRef<HTMLHeadingElement>(null);
@@ -92,6 +93,7 @@ export function Quiz() {
       income: inc,
       netSelfEmploymentIncome: earn === "mix" ? toNum(seIncome) : inc,
       benchmarkPremium: monthly * 12,
+      ...(toNum(planPrice) > 0 ? { actualPlanPremium: toNum(planPrice) * 12 } : {}),
       hsaEligible: hsa,
       incomeStability: steady,
       coverageYear: 2027,
@@ -330,6 +332,17 @@ export function Quiz() {
               <a href="https://www.healthcare.gov/see-plans/" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 w-fit items-center gap-1.5 text-sm text-ink-2 underline decoration-line-strong underline-offset-4 hover:text-ink">
                 See plans &amp; prices on healthcare.gov <ExternalLink size={16} />
               </a>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label htmlFor="plan-price" className="text-[15px] font-medium">
+                Price of the plan you&apos;ll buy <span className="font-normal text-ink-3">(optional)</span>
+              </label>
+              <div className="relative max-w-72">
+                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xl text-ink-3">$</span>
+                <input id="plan-price" inputMode="numeric" className="field pl-9 pr-16 text-2xl" value={planPrice} onChange={(e) => setPlanPrice(money(e.target.value))} placeholder="Same" />
+                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-ink-3">/ mo</span>
+              </div>
+              <p className="text-sm text-ink-3">Leave empty if it&apos;s the benchmark plan. Your credit can&apos;t be more than the plan costs.</p>
             </div>
             <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line-strong px-4 py-3 hover:bg-card">
               <input type="checkbox" checked={hsa} onChange={(e) => setHsa(e.target.checked)} className="mt-0.5 size-5 accent-[var(--accent)]" />
