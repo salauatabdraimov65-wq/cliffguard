@@ -43,7 +43,9 @@ export function Diagnosis({ input, demo }: { input: Input; demo: boolean }) {
   );
   const res = useMemo(() => calculate(live), [live]);
 
-  const canRescue = res.overBy > 0 && res.loss > 0 && res.feasible && res.contributionNeeded > 0;
+  // over the cliff: rescue; under it but inside the cushion for uneven or lumpy income: a cushion
+  const canRescue = res.feasible && res.contributionNeeded > 0 && (res.overBy > 0 ? res.loss > 0 : true);
+  const cushionOnly = canRescue && res.overBy <= 0;
   const rescued = applied && canRescue;
   const magi = rescued ? res.magiAfterPlan : res.magi;
   const subsidy = rescued ? res.subsidyAfterPlan : res.subsidy;
@@ -111,7 +113,10 @@ export function Diagnosis({ input, demo }: { input: Input; demo: boolean }) {
             {state === "rescued" && (
               <>
                 <p className="inline-flex items-center gap-2 text-[17px] font-medium text-safe-ink">
-                  <Check size={18} className="shrink-0" /> Plan applied: you&apos;re back under the cliff
+                  <Check size={18} className="shrink-0" />
+                  {cushionOnly
+                    ? `Plan applied: a ${usd(res.cliff - res.magiAfterPlan)} cushion under the cliff`
+                    : "Plan applied: you're back under the cliff"}
                 </p>
                 <h1 className="text-[34px] font-medium leading-[1.08] tracking-[-0.02em] sm:text-5xl">
                   You keep <span className="text-safe-ink num">{usd(shownSubsidy)}</span> a year
@@ -131,6 +136,15 @@ export function Diagnosis({ input, demo }: { input: Input; demo: boolean }) {
                 <span className="flex flex-col gap-0.5 sm:flex-row sm:gap-1.5">
                   <span>Apply rescue plan:</span>
                   <span className="whitespace-nowrap font-mono text-[15px] opacity-90 sm:font-sans sm:text-[16px] sm:opacity-100">{planLabel(res.plan)}</span>
+                </span>
+                <ArrowRight className="shrink-0" />
+              </button>
+            )}
+            {state === "under" && cushionOnly && (
+              <button type="button" onClick={() => toggle(true)} className="btn btn-secondary w-full justify-between whitespace-normal text-left sm:w-auto sm:justify-center">
+                <span className="flex flex-col gap-0.5 sm:flex-row sm:gap-1.5">
+                  <span>Add a cushion:</span>
+                  <span className="whitespace-nowrap">{planLabel(res.plan)}</span>
                 </span>
                 <ArrowRight className="shrink-0" />
               </button>

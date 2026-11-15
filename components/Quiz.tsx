@@ -93,6 +93,7 @@ export function Quiz() {
       netSelfEmploymentIncome: earn === "mix" ? toNum(seIncome) : inc,
       benchmarkPremium: monthly * 12,
       hsaEligible: hsa,
+      incomeStability: steady,
       coverageYear: 2027,
     };
     router.push(`/diagnosis?${inputToQuery(input)}`);
