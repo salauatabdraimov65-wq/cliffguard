@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { subsidyFor } from "@/lib/engine";
 import { usd, usdK } from "./format";
 
@@ -31,6 +31,8 @@ export type CliffChartProps = {
   compact?: boolean;
   /** Static preview on the landing page: no hover layer, no table. */
   preview?: boolean;
+  /** Rendered under the chart, above the table toggle (the income slider). */
+  controls?: ReactNode;
 };
 
 export function chartRange(cliff: number) {
@@ -58,6 +60,7 @@ export function CliffChart({
   glide = false,
   compact = false,
   preview = false,
+  controls,
 }: CliffChartProps) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(720);
@@ -84,7 +87,7 @@ export function CliffChart({
   );
 
   const narrow = w < 520;
-  const h = compact ? (narrow ? 196 : 228) : narrow ? 248 : 312;
+  const h = compact ? (narrow ? 196 : 228) : narrow ? 240 : 280;
   const pad = { l: narrow ? 40 : 48, r: narrow ? 8 : 16, t: 40, b: 32 };
   const pw = w - pad.l - pad.r;
   const ph = h - pad.t - pad.b;
@@ -284,6 +287,8 @@ export function CliffChart({
           </div>
         )}
       </div>
+
+      {controls}
 
       {!preview && (
         <details className="group mt-3">

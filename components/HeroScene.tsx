@@ -444,16 +444,16 @@ export function HeroScene() {
           {/* the cliff edge */}
           <line x1={edgeGround[0]} y1={edgeGround[1]} x2={edgeTop[0]} y2={edgeTop[1]} stroke="var(--h-ink-3)" strokeWidth={1} opacity={frame.rise[11]} />
           <g opacity={frame.rise[11]}>
-            <text x={edgeTop[0]} y={edgeTop[1] - 10} textAnchor="middle" className="font-mono" fontSize={narrow ? 11 : 13} fill="var(--h-ink)">
+            <text x={Math.min(w - 92, Math.max(92, edgeTop[0]))} y={edgeTop[1] - 10} textAnchor="middle" className="font-mono" fontSize={narrow ? 11 : 13} fill="var(--h-ink)">
               $132,000 · 400% FPL
             </text>
           </g>
 
           {/* axis ends */}
-          <text x={axisL[0]} y={axisL[1] + 18} textAnchor="middle" className="font-mono" fontSize={11} fill="var(--h-ink-3)" opacity={frame.rise[0]}>
+          <text x={Math.max(22, axisL[0])} y={axisL[1] + 18} textAnchor="middle" className="font-mono" fontSize={11} fill="var(--h-ink-3)" opacity={frame.rise[0]}>
             $110k
           </text>
-          <text x={axisR[0]} y={axisR[1] + 18} textAnchor="middle" className="font-mono" fontSize={11} fill="var(--h-ink-3)" opacity={frame.rise[N - 1]}>
+          <text x={Math.min(w - 22, axisR[0])} y={axisR[1] + 18} textAnchor="middle" className="font-mono" fontSize={11} fill="var(--h-ink-3)" opacity={frame.rise[N - 1]}>
             $154k
           </text>
 
