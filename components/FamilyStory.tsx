@@ -110,7 +110,7 @@ export function FamilyStory() {
         </div>
         <dl className="grid grid-cols-2 border-t border-line">
           {[
-            { k: applied ? "Reported income (MAGI)" : "Expected 2027 income", v: usd(magi) },
+            { k: applied ? "MAGI reported" : "Expected 2027 income", v: usd(magi) },
             applied
               ? { k: "Under the cliff by", v: usd(demo.cliff - demo.magiAfterPlan), tone: "safe" }
               : { k: "Over the cliff by", v: usd(demo.overBy), tone: "loss" },

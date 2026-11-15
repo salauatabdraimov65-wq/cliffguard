@@ -200,7 +200,7 @@ export function PlanView({ input: initial, demo, paid, canceled }: Props) {
           ) : (
             <div className="flex flex-col gap-5 rounded-2xl bg-ink p-5 text-on-ink shadow-lg sm:p-6">
               <div>
-                <h2 className="text-[17px] font-semibold">Unlock the full plan</h2>
+                <h2 className="text-[17px] font-semibold">Get the full plan</h2>
                 <p className="mt-1 text-[15px] opacity-75">Amounts, deadlines and a watch on your income all year.</p>
               </div>
               <div role="radiogroup" aria-label="Billing" className="grid grid-cols-2 gap-1 rounded-xl bg-on-ink/10 p-1">

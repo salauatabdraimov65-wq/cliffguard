@@ -24,7 +24,7 @@ const steps = [
   },
   {
     title: "Get back under it",
-    body: "A contribution plan with amounts and deadlines — SEP IRA, Solo 401(k), HSA — and a watch on your income all year.",
+    body: "A contribution plan with amounts and deadlines (SEP IRA, Solo 401(k), HSA), plus a watch on your income all year.",
   },
 ];
 

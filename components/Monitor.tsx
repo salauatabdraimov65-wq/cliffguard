@@ -67,17 +67,26 @@ export function Monitor({ input, demo }: { input: Input; demo: boolean }) {
             <p className="text-5xl font-semibold tracking-[-0.03em] num sm:text-6xl">
               {under ? usd(status.headroom) : `−${usd(-status.headroom)}`}
             </p>
-            <p className="text-[15px] text-ink-2 num">
-              Projected {usd(status.projectedIncome)}
-              {planned > 0 && ` − ${usd(planned)} planned SEP IRA`} = {usd(status.projectedMagi)} MAGI
-            </p>
+            {/* the projection as worksheet lines, so it never breaks mid-equation */}
+            <dl className="mt-3 grid w-full max-w-sm grid-cols-[1fr_auto] gap-x-6 gap-y-1 text-[15px] num">
+              <dt className="text-ink-2">Projected income</dt>
+              <dd className="text-right">{usd(status.projectedIncome)}</dd>
+              {planned > 0 && (
+                <>
+                  <dt className="text-ink-2">Planned SEP IRA</dt>
+                  <dd className="text-right">−{usd(planned)}</dd>
+                </>
+              )}
+              <dt className="border-t border-line-strong pt-1 font-medium">MAGI</dt>
+              <dd className="border-t border-line-strong pt-1 text-right font-semibold">{usd(status.projectedMagi)}</dd>
+            </dl>
           </div>
           {status.topUp > 0 && (
             <p className="swap-in max-w-sm rounded-xl bg-card px-4 py-3 text-[15px] text-ink-2">
               {status.feasible ? (
                 <>
-                  Add <span className="font-semibold text-ink num">{usd(status.topUp)}</span> to your SEP IRA to stay under — {usd(status.sepRoomLeft)} of SEP room
-                  would be left.
+                  Add <span className="font-semibold text-ink num">{usd(status.topUp)}</span> to your SEP IRA to stay under. That still leaves{" "}
+                  <span className="num">{usd(status.sepRoomLeft)}</span> of SEP room.
                 </>
               ) : (
                 <>Your SEP IRA room isn&apos;t enough to cover the {usd(status.topUp)} top-up. Update your Marketplace income to avoid a repayment.</>

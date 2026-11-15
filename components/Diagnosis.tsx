@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Input, PlanStep } from "@/lib/types";
 import { calculate } from "@/lib/engine";
 import { CliffChart, chartRange } from "./CliffChart";
-import { ArrowRight, Check, Undo } from "./Icons";
+import { ArrowRight, Check, Info, Undo } from "./Icons";
 import { inputToQuery } from "./inputParams";
 import { stateName } from "./zipToState";
 import { usd } from "./format";
@@ -111,7 +111,7 @@ export function Diagnosis({ input, demo }: { input: Input; demo: boolean }) {
             {state === "rescued" && (
               <>
                 <p className="inline-flex items-center gap-2 text-[17px] font-medium text-safe-ink">
-                  <Check size={18} /> Plan applied — you are back under the cliff
+                  <Check size={18} className="shrink-0" /> Plan applied: you&apos;re back under the cliff
                 </p>
                 <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.02em] sm:text-5xl">
                   You keep <span className="text-safe-ink num">{usd(shownSubsidy)}</span> a year
@@ -122,9 +122,17 @@ export function Diagnosis({ input, demo }: { input: Input; demo: boolean }) {
 
           <div className="flex flex-col gap-2 lg:items-end">
             {state === "over" && canRescue && (
-              <button type="button" onClick={() => toggle(true)} className="btn btn-dark w-full whitespace-normal py-3 text-left sm:w-auto">
-                Apply rescue plan: {planLabel(res.plan)}
-                <ArrowRight />
+              // the amount never splits: on a phone it drops to its own line as one unit
+              <button
+                type="button"
+                onClick={() => toggle(true)}
+                className="btn btn-dark w-full justify-between whitespace-normal py-3 text-left sm:w-auto sm:justify-center"
+              >
+                <span className="flex flex-col gap-0.5 sm:flex-row sm:gap-1.5">
+                  <span>Apply rescue plan:</span>
+                  <span className="whitespace-nowrap font-mono text-[15px] opacity-90 sm:font-sans sm:text-[16px] sm:opacity-100">{planLabel(res.plan)}</span>
+                </span>
+                <ArrowRight className="shrink-0" />
               </button>
             )}
             {state === "rescued" && (
@@ -158,14 +166,14 @@ export function Diagnosis({ input, demo }: { input: Input; demo: boolean }) {
             contribution={contribution}
             contributionLabel={contribution ? `−${usd(contribution)} to retirement` : undefined}
             glide={glide}
-          />
-
-          <div className="mt-6 border-t border-line pt-5">
-            <div className="flex items-baseline justify-between gap-3">
-              <label htmlFor="income" className="text-[15px] font-medium">
+            controls={
+          <div className="mt-4 border-t border-line pt-4">
+            {/* phone: label above the figure, never squeezed beside it */}
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
+              <label htmlFor="income" className="text-[15px] font-medium text-ink-2 sm:text-ink">
                 Expected 2027 household income
               </label>
-              <output htmlFor="income" className="text-xl font-semibold num">
+              <output htmlFor="income" className="text-2xl font-semibold tracking-[-0.01em] num sm:text-xl">
                 {usd(income)}
               </output>
             </div>
@@ -186,23 +194,28 @@ export function Diagnosis({ input, demo }: { input: Input; demo: boolean }) {
               <span>{usd(sliderMax)}</span>
             </div>
           </div>
+            }
+          />
         </section>
 
-        <aside aria-labelledby="math-h" className="card enter-3 flex flex-col p-5 sm:p-6">
+        <aside aria-labelledby="math-h" className="card enter-3 flex flex-col p-5 sm:p-6 lg:self-start">
           <h2 id="math-h" className="text-[17px] font-semibold">The math</h2>
           <dl className="mt-4 flex flex-col">
             {[
               { n: "1", k: "Income", v: usd(income) },
               { n: "2", k: "Retirement contribution", v: contribution ? `−${usd(contribution)}` : "$0" },
               { n: "3", k: "MAGI", v: usd(shownMagi), strong: true },
-              { n: "4", k: `Cliff · 400% FPL, ${input.householdSize} ${input.householdSize === 1 ? "person" : "people"}`, v: usd(res.cliff) },
+              { n: "4", k: "Cliff (400% FPL)", sub: `for ${input.householdSize} ${input.householdSize === 1 ? "person" : "people"}`, v: usd(res.cliff) },
             ].map((r) => (
               <div key={r.n} className="flex items-baseline gap-3 border-b border-line py-3">
-                <dt className="flex flex-1 items-baseline gap-3 text-[15px] text-ink-2">
-                  <span className="line-no w-4">{r.n}</span>
-                  {r.k}
+                <dt className="flex min-w-0 flex-1 items-baseline gap-3 text-[15px] text-ink-2">
+                  <span className="line-no w-4 shrink-0">{r.n}</span>
+                  <span className="min-w-0">
+                    {r.k}
+                    {"sub" in r && r.sub && <span className="block text-[13px] text-ink-3">{r.sub}</span>}
+                  </span>
                 </dt>
-                <dd className={`text-[15px] num ${r.strong ? "font-semibold text-ink" : "text-ink"}`}>{r.v}</dd>
+                <dd className={`shrink-0 text-[15px] num ${r.strong ? "font-semibold text-ink" : "text-ink"}`}>{r.v}</dd>
               </div>
             ))}
             <div className="flex items-baseline gap-3 py-4">
@@ -223,7 +236,7 @@ export function Diagnosis({ input, demo }: { input: Input; demo: boolean }) {
             </p>
           )}
 
-          <div className="mt-auto flex flex-col gap-3 pt-6">
+          <div className="flex flex-col gap-3 pt-6">
             <Link href={planHref} className="btn btn-primary w-full">
               See my full plan
               <ArrowRight />
@@ -233,13 +246,21 @@ export function Diagnosis({ input, demo }: { input: Input; demo: boolean }) {
         </aside>
       </div>
 
-      {res.warnings.length > 0 && state !== "over" && (
-        <ul className="flex flex-col gap-1 text-sm text-ink-2">
-          {res.warnings.map((w) => (
-            <li key={w}>{w}</li>
-          ))}
-        </ul>
-      )}
+      {/* engine warnings (state rules, Medicaid range, …); the one already in the banner is not repeated */}
+      {(() => {
+        const shown = state === "over" && !canRescue ? res.warnings[0] : undefined;
+        const rest = res.warnings.filter((w) => w !== shown);
+        return rest.length > 0 ? (
+          <ul className="flex flex-col gap-2 rounded-xl border border-line bg-card px-4 py-3 text-[15px] text-ink-2">
+            {rest.map((w) => (
+              <li key={w} className="flex gap-2.5">
+                <Info className="mt-0.5 shrink-0 text-ink-3" />
+                {w}
+              </li>
+            ))}
+          </ul>
+        ) : null;
+      })()}
 
       <p className="max-w-[70ch] text-[13px] leading-relaxed text-ink-3">
         Estimate for illustration using IRS Rev. Proc. 2026-26 and 2026 poverty guidelines. Not tax advice.
