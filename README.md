@@ -4,7 +4,7 @@
 
 **Earn $1 more. Lose $10,500. We make sure that doesn't happen.**
 
-**Live product: https://cliffguard.vercel.app** — no login. Click **“Try demo family”**, or jump straight in:
+**Live product: https://cliffguard.vercel.app** —  no login. And video about product : https://youtu.be/q05R-eYdUYE. Click **“Try demo family”**, or jump straight in:
 
 | What to see | Link |
 |---|---|
