@@ -34,7 +34,7 @@ const EXCLUDE = [
 ];
 
 const PAYER_PREFIXES =
-  /^(ach (credit|deposit)|direct dep(osit)?|zelle (payment )?from|payment from|wire (transfer )?from|mobile deposit|deposit from|deposit)\s*[-:]?\s*/i;
+  /^(ach (credit|deposit)|direct dep(osit)?|zelle (payment )?from|zelle( transfer| payment)?\s*-|payment from|wire (transfer )?from|wire transfer\s*-|incoming wire\s*-?|mobile deposit|deposit from|deposit)\s*[-:]?\s*/i;
 
 /** RFC 4180-ish CSV: quoted fields, escaped quotes, commas/newlines inside quotes, CRLF. */
 export function parseCsv(text: string, delimiter = ","): string[][] {
@@ -123,14 +123,39 @@ export function confidenceFor(months: number): Confidence {
 
 const norm = (h: string) => h.trim().toLowerCase().replace(/\s+/g, " ");
 
-export function parseIncomeCsv(csv: string): ParsedIncome {
+/** A positive (incoming) row with the rules' verdict. */
+export type IncomingRow = {
+  date: string;
+  amount: number;
+  description: string;
+  payer: string;
+  excluded: boolean; // rules: own transfer / refund / interest
+  ambiguous: boolean; // rules aren't sure: worth a second look (AI, if configured)
+};
+
+// Incoming rows the keyword rules can't settle on their own.
+const AMBIGUOUS = [
+  /\bwire\b/i,
+  /\bzelle\b/i,
+  /\b(venmo|paypal|cash ?app)\b/i,
+  /\btransfer\b.*\b(inc|llc|corp|co|ltd|pllc|lp)\b\.?/i,
+  /^(mobile |atm |branch )?deposit$/i,
+];
+
+export function isAmbiguous(description: string): boolean {
+  if (/\bzelle (to|from) (self|me|myself)\b/i.test(description)) return false;
+  return AMBIGUOUS.some((re) => re.test(description.trim()));
+}
+
+/** Parses the CSV into incoming rows and the statement length in months. */
+export function parseIncomeRows(csv: string): { rows: IncomingRow[]; months: number } {
   if (typeof csv !== "string" || !csv.trim()) throw new ParseIncomeError("CSV is empty.");
   const firstLine = csv.split(/\r?\n/, 1)[0];
   const delimiter = !firstLine.includes(",") && firstLine.includes(";") ? ";" : ",";
-  const rows = parseCsv(csv, delimiter);
-  if (rows.length < 2) throw new ParseIncomeError("CSV needs a header row and at least one transaction.");
+  const table = parseCsv(csv, delimiter);
+  if (table.length < 2) throw new ParseIncomeError("CSV needs a header row and at least one transaction.");
 
-  const header = rows[0].map(norm);
+  const header = table[0].map(norm);
   const find = (re: RegExp, loose: string) => {
     const exact = header.findIndex((h) => re.test(h));
     return exact >= 0 ? exact : header.findIndex((h) => h.includes(loose));
@@ -141,40 +166,50 @@ export function parseIncomeCsv(csv: string): ParsedIncome {
   const missing = [iDate < 0 && "date", iAmount < 0 && "amount", iDesc < 0 && "description"].filter(Boolean);
   if (missing.length) throw new ParseIncomeError(`Could not find column(s): ${missing.join(", ")}.`);
 
-  const transactions: IncomeTransaction[] = [];
+  const rows: IncomingRow[] = [];
   const allDates: string[] = [];
-  let excludedCount = 0;
-
-  for (const r of rows.slice(1)) {
+  for (const r of table.slice(1)) {
     const date = parseDate(r[iDate] ?? "");
     const amount = parseAmount(r[iAmount] ?? "");
     const desc = (r[iDesc] ?? "").trim();
     if (!date || Number.isNaN(amount)) continue;
     allDates.push(date);
     if (amount <= 0) continue;
-    if (isExcluded(desc)) {
-      excludedCount++;
-      continue;
-    }
-    transactions.push({ date, amount: Math.round(amount * 100) / 100, payer: cleanPayer(desc) });
+    rows.push({
+      date,
+      amount: Math.round(amount * 100) / 100,
+      description: desc,
+      payer: cleanPayer(desc),
+      excluded: isExcluded(desc),
+      ambiguous: isAmbiguous(desc),
+    });
   }
-
   if (!allDates.length) throw new ParseIncomeError("No rows with a valid date and amount.");
 
   // Statement period in calendar months, inclusive (Mar..Oct = 8).
   allDates.sort();
   const [y1, m1] = allDates[0].split("-").map(Number);
   const [y2, m2] = allDates[allDates.length - 1].split("-").map(Number);
-  const months = (y2 - y1) * 12 + (m2 - m1) + 1;
+  return { rows, months: (y2 - y1) * 12 + (m2 - m1) + 1 };
+}
 
-  transactions.sort((a, b) => a.date.localeCompare(b.date));
+/** Totals and projection from classified rows. */
+export function summarizeIncome(rows: IncomingRow[], months: number): ParsedIncome {
+  const transactions: IncomeTransaction[] = rows
+    .filter((r) => !r.excluded)
+    .map((r) => ({ date: r.date, amount: r.amount, payer: r.payer }))
+    .sort((a, b) => a.date.localeCompare(b.date));
   const total = transactions.reduce((s, t) => s + t.amount, 0);
-
   return {
     transactions,
     projectedAnnualIncome: Math.round((total / months) * 12),
     confidence: confidenceFor(months),
     months,
-    excludedCount,
+    excludedCount: rows.filter((r) => r.excluded).length,
   };
+}
+
+export function parseIncomeCsv(csv: string): ParsedIncome {
+  const { rows, months } = parseIncomeRows(csv);
+  return summarizeIncome(rows, months);
 }

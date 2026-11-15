@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Input, PlanStep } from "@/lib/types";
 import { calculate } from "@/lib/engine";
+import { AskCliffGuard } from "./AskCliffGuard";
 import { CliffChart, chartRange } from "./CliffChart";
 import { ArrowRight, Check, Info, Undo } from "./Icons";
 import { inputToQuery } from "./inputParams";
@@ -260,6 +261,8 @@ export function Diagnosis({ input, demo }: { input: Input; demo: boolean }) {
           </div>
         </aside>
       </div>
+
+      <AskCliffGuard input={input} />
 
       {/* engine warnings (state rules, Medicaid range, …); the one already in the banner is not repeated */}
       {(() => {
