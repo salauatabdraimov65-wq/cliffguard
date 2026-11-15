@@ -83,14 +83,17 @@ export function templateExplanation(r: Result): string {
   return `${body} ${DISCLAIMER}`;
 }
 
+/** All finite numbers anywhere inside a value (objects, arrays), rounded. */
+export function numbersIn(value: unknown, out = new Set<number>()): Set<number> {
+  if (typeof value === "number" && Number.isFinite(value)) out.add(Math.round(value));
+  else if (Array.isArray(value)) value.forEach((v) => numbersIn(v, out));
+  else if (value && typeof value === "object") Object.values(value).forEach((v) => numbersIn(v, out));
+  return out;
+}
+
 /** Every number in the text must come from the facts (or be a small number / a year). */
-export function usesOnlyKnownNumbers(text: string, facts: ReturnType<typeof planFacts>): boolean {
-  const allowed = new Set<number>();
-  const add = (v: unknown) => {
-    if (typeof v === "number" && Number.isFinite(v)) allowed.add(Math.round(v));
-  };
-  Object.values(facts).forEach(add);
-  facts.planSteps.forEach((s) => add(s.amount));
+export function usesOnlyKnownNumbers(text: string, facts: unknown): boolean {
+  const allowed = numbersIn(facts);
   const found = text.match(/\d[\d,]*(\.\d+)?/g) ?? [];
   return found.every((raw) => {
     const n = Math.round(Number(raw.replace(/,/g, "")));
