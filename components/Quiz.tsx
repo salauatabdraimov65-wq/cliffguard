@@ -144,7 +144,7 @@ export function Quiz() {
         {step === 1 && (
           <fieldset className="flex flex-col gap-6">
             <legend className="contents">
-              <h1 ref={headRef} tabIndex={-1} className="text-3xl font-semibold tracking-[-0.02em] outline-none sm:text-4xl">
+              <h1 ref={headRef} tabIndex={-1} className="text-3xl font-medium tracking-[-0.02em] outline-none sm:text-4xl">
                 What&apos;s your ZIP code?
               </h1>
             </legend>
@@ -181,7 +181,7 @@ export function Quiz() {
         {step === 2 && (
           <fieldset className="flex flex-col gap-6">
             <legend className="contents">
-              <h1 ref={headRef} tabIndex={-1} className="text-3xl font-semibold tracking-[-0.02em] outline-none sm:text-4xl">
+              <h1 ref={headRef} tabIndex={-1} className="text-3xl font-medium tracking-[-0.02em] outline-none sm:text-4xl">
                 Who&apos;s on your plan?
               </h1>
             </legend>
@@ -226,7 +226,7 @@ export function Quiz() {
         {step === 3 && (
           <fieldset className="flex flex-col gap-6">
             <legend className="contents">
-              <h1 ref={headRef} tabIndex={-1} className="text-3xl font-semibold tracking-[-0.02em] outline-none sm:text-4xl">
+              <h1 ref={headRef} tabIndex={-1} className="text-3xl font-medium tracking-[-0.02em] outline-none sm:text-4xl">
                 What will your household earn in 2027?
               </h1>
             </legend>
@@ -275,7 +275,7 @@ export function Quiz() {
         {step === 4 && (
           <fieldset className="flex flex-col gap-6">
             <legend className="contents">
-              <h1 ref={headRef} tabIndex={-1} className="text-3xl font-semibold tracking-[-0.02em] outline-none sm:text-4xl">
+              <h1 ref={headRef} tabIndex={-1} className="text-3xl font-medium tracking-[-0.02em] outline-none sm:text-4xl">
                 How do you earn?
               </h1>
             </legend>
@@ -311,7 +311,7 @@ export function Quiz() {
         {step === 5 && (
           <fieldset className="flex flex-col gap-6">
             <legend className="contents">
-              <h1 ref={headRef} tabIndex={-1} className="text-3xl font-semibold tracking-[-0.02em] outline-none sm:text-4xl">
+              <h1 ref={headRef} tabIndex={-1} className="text-3xl font-medium tracking-[-0.02em] outline-none sm:text-4xl">
                 What does your benchmark silver plan cost?
               </h1>
             </legend>
@@ -327,7 +327,7 @@ export function Quiz() {
                 <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-ink-3">/ mo</span>
               </div>
               <a href="https://www.healthcare.gov/see-plans/" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 w-fit items-center gap-1.5 text-sm text-ink-2 underline decoration-line-strong underline-offset-4 hover:text-ink">
-                See plans &amp; prices on healthcare.gov <ExternalLink size={14} />
+                See plans &amp; prices on healthcare.gov <ExternalLink size={16} />
               </a>
             </div>
             <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line-strong px-4 py-3 hover:bg-card">

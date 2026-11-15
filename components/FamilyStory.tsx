@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { calculate } from "@/lib/engine";
 import { demoFamily } from "@/lib/demoFamily";
-import { CliffChart } from "./CliffChart";
 import { ArrowRight, Check, Undo } from "./Icons";
 import { useInView } from "./Reveal";
 import { usd } from "./format";
@@ -45,14 +44,14 @@ export function FamilyStory() {
   }, [seen]);
 
   const magi = applied ? demo.magiAfterPlan : demo.magi;
-  const kept = useTween(applied ? demo.subsidyAfterPlan : demo.loss, glide, 700);
+  const kept = useTween(applied ? demo.subsidyAfterPlan : 0, glide, 700);
+  const magiShown = useTween(magi, glide, 700);
 
   return (
     <div ref={ref} className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-center lg:gap-16">
       <div className="flex flex-col gap-5">
-        <p className="eyebrow">Meet the demo family</p>
-        <h2 id="family-h" className="text-3xl font-semibold leading-[1.1] tracking-[-0.02em] sm:text-[44px]">
-          Mike freelances. Jess runs a coffee shop. They&apos;re {usd(demo.overBy)} over.
+        <h2 id="family-h" className="text-3xl font-medium leading-[1.1] tracking-[-0.02em] sm:text-[44px]">
+          Mike freelances, Jess runs a coffee shop, and they&apos;re {usd(demo.overBy)} over
         </h2>
         <p className="max-w-[46ch] text-[17px] leading-relaxed text-ink-2">
           Two kids, Austin, an expected {usd(demo.magi)} for 2027. That last {usd(demo.overBy)} costs them their whole
@@ -88,55 +87,47 @@ export function FamilyStory() {
           >
             {applied ? (
               <>
-                <Check size={14} /> Plan applied
+                <Check size={16} /> Plan applied
               </>
             ) : (
               `${Math.round(demo.fplPercent * 100)}% FPL`
             )}
           </span>
         </div>
-        <div className="px-3 pt-5 sm:px-5">
-          <CliffChart
-            householdSize={demoFamily.householdSize}
-            benchmark={demoFamily.benchmarkPremium}
-            cliff={demo.cliff}
-            income={demo.magi}
-            magi={magi}
-            contribution={applied ? sep : 0}
-            glide={glide}
-            compact
-            preview
-          />
-        </div>
-        <dl className="grid grid-cols-2 border-t border-line">
+        {/* the worksheet, not a second chart: the hero already is the chart */}
+        <dl className="flex flex-col px-5 sm:px-6">
           {[
-            { k: applied ? "MAGI reported" : "Expected 2027 income", v: usd(magi) },
-            applied
-              ? { k: "Under the cliff by", v: usd(demo.cliff - demo.magiAfterPlan), tone: "safe" }
-              : { k: "Over the cliff by", v: usd(demo.overBy), tone: "loss" },
-            applied
-              ? { k: "Subsidy kept", v: `${usd(kept)}/yr`, tone: "safe" }
-              : { k: "Subsidy lost", v: `${usd(kept)}/yr`, tone: "loss" },
-            applied
-              ? { k: "Put into a SEP IRA", v: usd(sep), tone: "" }
-              : { k: `With ${usd(sep)} to a SEP IRA`, v: `${usd(demo.subsidyAfterPlan)}/yr back`, tone: "safe" },
-          ].map((r, i) => (
-            <div
-              key={i}
-              className={`flex flex-col gap-1 px-5 py-4 transition-colors duration-500 sm:px-6 ${i % 2 === 1 ? "border-l border-line" : ""} ${
-                i > 1 ? "border-t border-line" : ""
-              } ${applied && r.tone === "safe" ? "bg-safe-wash/50" : ""}`}
-            >
-              <dt className="text-[13px] text-ink-3">{r.k}</dt>
-              <dd
-                key={`${i}-${applied}`}
-                className={`swap-in text-lg font-semibold num ${r.tone === "loss" ? "text-loss-ink" : r.tone === "safe" ? "text-safe-ink" : ""}`}
-              >
-                {r.v}
-              </dd>
+            { n: "1", k: "Expected 2027 income", v: usd(demo.magi) },
+            { n: "2", k: "SEP IRA contribution", v: applied ? `−${usd(sep)}` : "$0" },
+            { n: "3", k: "MAGI", v: usd(magiShown), strong: true },
+            { n: "4", k: "Cliff (400% FPL)", v: usd(demo.cliff) },
+          ].map((r) => (
+            <div key={r.n} className="flex items-baseline gap-3 border-b border-line py-3">
+              <dt className="flex flex-1 items-baseline gap-3 text-[15px] text-ink-2">
+                <span className="line-no w-4 shrink-0">{r.n}</span>
+                {r.k}
+              </dt>
+              <dd className={`text-[15px] num ${r.strong ? "font-semibold" : ""}`}>{r.v}</dd>
             </div>
           ))}
+          <div className="flex items-baseline gap-3 py-4">
+            <dt className="flex flex-1 items-baseline gap-3 text-[15px] font-medium">
+              <span className="line-no w-4 shrink-0">5</span>
+              Premium tax credit
+            </dt>
+            <dd className={`text-2xl font-semibold num transition-colors duration-300 ${applied ? "text-safe-ink" : "text-loss-ink"}`}>
+              {applied ? `${usd(kept)}/yr` : "$0"}
+            </dd>
+          </div>
         </dl>
+        <p
+          key={applied ? "a" : "b"}
+          className={`swap-in border-t px-5 py-3 text-[14px] sm:px-6 ${applied ? "border-safe/20 bg-safe-wash text-safe-ink" : "border-loss/20 bg-loss-wash text-loss-ink"}`}
+        >
+          {applied
+            ? `${usd(demo.cliff - demo.magiAfterPlan)} under the cliff · the credit is back`
+            : `${usd(demo.overBy)} over the cliff · losing ${usd(demo.loss)} a year`}
+        </p>
       </div>
     </div>
   );

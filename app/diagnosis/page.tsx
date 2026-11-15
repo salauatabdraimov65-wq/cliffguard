@@ -20,7 +20,7 @@ export default async function DiagnosisPage({ searchParams }: PageProps<"/diagno
         ) : (
           <div className="wrap flex flex-col items-start gap-4 py-24">
             <p className="eyebrow">No household yet</p>
-            <h1 className="text-3xl font-semibold tracking-[-0.02em]">Answer five questions first</h1>
+            <h1 className="text-3xl font-medium tracking-[-0.02em]">Answer five questions first</h1>
             <p className="max-w-[52ch] text-ink-2">
               We need your state, household, income and plan price to estimate your subsidy. Or look at
               a ready-made family.

@@ -55,7 +55,7 @@ export function Monitor({ input, demo }: { input: Input; demo: boolean }) {
     <div className="wrap flex flex-col gap-8 py-8 sm:py-12">
       <div className="enter flex flex-col gap-2">
         <p className="eyebrow">{demo ? "Demo family · illustrative months" : "Your household"} · 2027</p>
-        <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.02em] sm:text-5xl">Room under the cliff</h1>
+        <h1 className="text-[34px] font-medium leading-[1.08] tracking-[-0.02em] sm:text-5xl">Room under the cliff</h1>
       </div>
 
       <section className={`enter-2 rounded-2xl border px-5 py-6 transition-colors duration-300 sm:px-8 sm:py-8 ${under ? "border-safe/25 bg-safe-wash" : "border-loss/25 bg-loss-wash"}`} aria-live="polite">
@@ -112,7 +112,7 @@ export function Monitor({ input, demo }: { input: Input; demo: boolean }) {
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
         <section aria-labelledby="months-h" className="card enter-3 p-5 sm:p-6">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 id="months-h" className="text-[17px] font-semibold">Income by month</h2>
+            <h2 id="months-h" className="text-[17px] font-medium">Income by month</h2>
             <p className="text-sm text-ink-3 num">
               {entries.length} of 12 months · {usd(ytd)} so far
             </p>
@@ -168,7 +168,7 @@ export function Monitor({ input, demo }: { input: Input; demo: boolean }) {
         </section>
 
         <aside aria-labelledby="rem-h" className="card enter-3 flex flex-col p-5 sm:p-6">
-          <h2 id="rem-h" className="inline-flex items-center gap-2 text-[17px] font-semibold">
+          <h2 id="rem-h" className="inline-flex items-center gap-2 text-[17px] font-medium">
             <Bell className="text-ink-3" /> Reminders
           </h2>
           <ol className="mt-3 flex flex-col">

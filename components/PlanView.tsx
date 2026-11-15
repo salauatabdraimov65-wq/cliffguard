@@ -82,7 +82,7 @@ export function PlanView({ input: initial, demo, paid, canceled }: Props) {
           Back to my diagnosis
         </Link>
         <p className="eyebrow">{demo ? "Demo family · Mike & Jess" : "Your household"} · 2027 coverage</p>
-        <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.02em] sm:text-5xl">
+        <h1 className="text-[34px] font-medium leading-[1.08] tracking-[-0.02em] sm:text-5xl">
           {rescue ? "Your rescue plan" : res.overBy > 0 ? "Your options" : "Stay under the cliff"}
         </h1>
         <p className="max-w-[60ch] text-lg leading-relaxed text-ink-2">
@@ -119,10 +119,10 @@ export function PlanView({ input: initial, demo, paid, canceled }: Props) {
                   <span className="line-no mt-1 w-6 shrink-0">{String(i + 1).padStart(2, "0")}</span>
                   <div className="flex min-w-0 flex-1 flex-col gap-2">
                     <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                      <h2 className="text-lg font-semibold">{TITLE[s.account]}</h2>
+                      <h2 className="text-lg font-medium">{TITLE[s.account]}</h2>
                       {locked ? (
                         <span className="inline-flex items-center gap-1.5 rounded-md bg-raised px-2 py-1 font-mono text-[12px] text-ink-2">
-                          <Lock size={14} /> Pro
+                          <Lock size={16} /> Pro
                         </span>
                       ) : (
                         s.amount > 0 && <span className="text-xl font-semibold num">{usd(s.amount)}</span>
@@ -154,7 +154,7 @@ export function PlanView({ input: initial, demo, paid, canceled }: Props) {
               <x.icon className="mt-0.5 shrink-0 text-ink-3" />
               <div className="flex flex-1 flex-col gap-1">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <h2 className="font-semibold">{x.title}</h2>
+                  <h2 className="font-medium">{x.title}</h2>
                   {!unlocked && <span className="font-mono text-[12px] text-ink-3">Pro</span>}
                 </div>
                 <p className="text-[15px] text-ink-2">{x.body}</p>
@@ -167,7 +167,7 @@ export function PlanView({ input: initial, demo, paid, canceled }: Props) {
         <aside className="enter-3 flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
           {rescue && (
             <div className="card p-5 sm:p-6">
-              <h2 className="text-[17px] font-semibold">What the plan is worth</h2>
+              <h2 className="text-[17px] font-medium">What the plan is worth</h2>
               <dl className="mt-3 flex flex-col">
                 {[
                   { k: "Subsidy back", v: usd(res.subsidyAfterPlan - res.subsidy) },
@@ -200,7 +200,7 @@ export function PlanView({ input: initial, demo, paid, canceled }: Props) {
           ) : (
             <div className="flex flex-col gap-5 rounded-2xl bg-ink p-5 text-on-ink shadow-lg sm:p-6">
               <div>
-                <h2 className="text-[17px] font-semibold">Get the full plan</h2>
+                <h2 className="text-[17px] font-medium">Get the full plan</h2>
                 <p className="mt-1 text-[15px] opacity-75">Amounts, deadlines and a watch on your income all year.</p>
               </div>
               <div role="radiogroup" aria-label="Billing" className="grid grid-cols-2 gap-1 rounded-xl bg-on-ink/10 p-1">
