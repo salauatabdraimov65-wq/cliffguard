@@ -7,6 +7,7 @@ import { calculate } from "@/lib/engine";
 import { demoFamily } from "@/lib/demoFamily";
 import { ArrowRight, Bell, Calendar, Check, Lock } from "./Icons";
 import { inputToQuery, queryToInput } from "./inputParams";
+import { PlanExplain } from "./PlanExplain";
 import { usd } from "./format";
 
 const TITLE: Record<PlanStep["account"], string> = {
@@ -103,6 +104,8 @@ export function PlanView({ input: initial, demo, paid, canceled }: Props) {
           )}
         </p>
       </div>
+
+      <PlanExplain input={input} />
 
       <dl className="enter flex flex-wrap gap-x-8 gap-y-3 rounded-xl border border-line bg-card px-5 py-4">
         <div className="flex flex-col">
