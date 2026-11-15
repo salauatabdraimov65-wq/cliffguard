@@ -73,7 +73,9 @@ export function calculate(input: Input, options: CalculateOptions = {}): Result 
   const magi = input.income;
   const fplPercent = magi / f;
 
-  const subsidyAt = (m: number) => subsidyFor(m, n, input.benchmarkPremium);
+  // The credit can't exceed the premium of the plan actually bought (IRC §36B(b)(2)(A)).
+  const planPrice = input.actualPlanPremium ?? input.benchmarkPremium;
+  const subsidyAt = (m: number) => Math.min(subsidyFor(m, n, input.benchmarkPremium), planPrice);
   const subsidy = subsidyAt(magi);
   const overBy = Math.max(0, magi - cliff);
   const loss = overBy > 0 ? subsidyAt(cliff) : 0;
@@ -119,6 +121,8 @@ export function calculate(input: Input, options: CalculateOptions = {}): Result 
     subsidyAfterPlan: Math.round(opt.subsidyAfterPlan),
     estTaxSavings: Math.round(opt.estTaxSavings),
     netBenefit: Math.round(opt.netBenefit),
+    premiumYouPay: Math.round(Math.max(0, planPrice - subsidy)),
+    premiumYouPayAfterPlan: Math.round(Math.max(0, planPrice - opt.subsidyAfterPlan)),
     warnings,
   };
 }
